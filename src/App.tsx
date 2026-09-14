@@ -20,7 +20,7 @@ export default function App() {
   const Screen = SCREEN_MAP[currentScreen];
 
   return (
-    <div className="w-full max-w-[390px] min-h-dvh relative overflow-hidden bg-bg">
+    <div className="w-full max-w-97.5 min-h-dvh relative overflow-hidden bg-bg">
       <Screen onNavigate={setCurrentScreen} />
     </div>
   );
