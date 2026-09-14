@@ -27,7 +27,7 @@ export function GameplayScreen({ onNavigate }: GameplayScreenProps) {
           >
             <Music size={16} color="#FFFFFF" strokeWidth={2.5} />
           </div>
-          <span className="text-lg tracking-[-0.02em] font-bold leading-[22px] text-text-primary">
+          <span className="text-lg tracking-[-0.02em] font-bold leading-5.5 text-text-primary">
             Advinha Song
           </span>
         </div>
@@ -50,23 +50,23 @@ export function GameplayScreen({ onNavigate }: GameplayScreenProps) {
         <button
           type="button"
           onClick={() => setIsPlaying(!isPlaying)}
-          className="w-[150px] h-[150px] flex items-center justify-center rounded-full relative shrink-0 shadow-[inset_0_0_20px_#000000CC,0_10px_30px_#00000099] border-[3px] border-solid border-border cursor-pointer transition-transform hover:scale-105 active:scale-95"
+          className="w-37.5 h-37.5 flex items-center justify-center rounded-full relative shrink-0 shadow-[inset_0_0_20px_#000000CC,0_10px_30px_#00000099] border-[3px] border-solid border-border cursor-pointer transition-transform hover:scale-105 active:scale-95"
           style={{
             backgroundImage:
               'radial-gradient(circle at 50% 50%, #2A2D38 10%, #1D1F27 35%, #17191F 70%, #1D1F27 100%)',
           }}
         >
           {/* Decorative rings */}
-          <div className="absolute w-[110px] h-[110px] rounded-full border border-dashed border-white/8" />
+          <div className="absolute w-27.5 h-27.5 rounded-full border border-dashed border-white/8" />
           <div className="absolute rounded-full border border-solid border-white/5 w-20 h-20" />
           {/* Play icon */}
           <div
-            className="w-[58px] h-[58px] flex items-center justify-center rounded-full shrink-0 shadow-[0_0_24px_#FF385C80,0_4px_12px_#00000066] transition-shadow"
+            className="w-14.5 h-14.5 flex items-center justify-center rounded-full shrink-0 shadow-[0_0_24px_#FF385C80,0_4px_12px_#00000066] transition-shadow"
             style={{
               backgroundImage: 'linear-gradient(135deg, #FF385C 0%, #D6294D 100%)',
             }}
           >
-            <Play size={22} fill="#FFFFFF" color="#FFFFFF" className="ml-[3px]" />
+            <Play size={22} fill="#FFFFFF" color="#FFFFFF" className="ml-0.75" />
           </div>
         </button>
 
@@ -97,7 +97,7 @@ export function GameplayScreen({ onNavigate }: GameplayScreenProps) {
             placeholder="Digite a música ou artista..."
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
-            className="grow text-sm font-medium leading-[18px] text-text-primary placeholder:text-text-muted bg-transparent outline-none border-none"
+            className="grow text-sm font-medium leading-4.5 text-text-primary placeholder:text-text-muted bg-transparent outline-none border-none"
           />
           <div className="py-0.5 px-1.5 rounded-[4px] bg-border">
             <span className="text-[10px] font-bold leading-3 text-text-muted">↵</span>
@@ -126,7 +126,7 @@ export function GameplayScreen({ onNavigate }: GameplayScreenProps) {
               backgroundImage: 'linear-gradient(135deg, #FF385C 0%, #D6294D 100%)',
             }}
           >
-            <span className="text-sm font-bold leading-[18px] text-white">
+            <span className="text-sm font-bold leading-4.5 text-white">
               Enviar Palpite
             </span>
             <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.5} />

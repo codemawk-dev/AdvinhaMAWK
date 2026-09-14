@@ -28,15 +28,15 @@ export function AlbumCard({ song, variant }: AlbumCardProps) {
     <div className="flex flex-col items-center w-full p-5 rounded-lg gap-4 shadow-[0_16px_36px_#00000080] bg-surface border-[1.5px] border-solid border-border">
       {/* Reveal label (defeat only) */}
       {variant === 'defeat' && (
-        <span className="text-[11px] uppercase tracking-[0.08em] font-bold leading-[14px] text-text-muted">
+        <span className="text-[11px] uppercase tracking-[0.08em] font-bold leading-3.5 text-text-muted">
           A música secreta era:
         </span>
       )}
 
       {/* Album art + vinyl */}
-      <div className="w-[170px] h-[170px] flex items-center justify-center relative shrink-0">
+      <div className="w-42.5 h-42.5 flex items-center justify-center relative shrink-0">
         {/* Vinyl disc */}
-        <div className="absolute -right-3.5 w-[150px] h-[150px] flex items-center justify-center rounded-full shadow-[0_8px_24px_#00000099] border-2 border-solid border-[#333948]"
+        <div className="absolute -right-3.5 w-37.5 h-37.5 flex items-center justify-center rounded-full shadow-[0_8px_24px_#00000099] border-2 border-solid border-[#333948]"
           style={{
             backgroundImage:
               'radial-gradient(circle at 50% 50%, #2A2D38 12%, #1D1F27 35%, #17191F 70%)',
@@ -50,7 +50,7 @@ export function AlbumCard({ song, variant }: AlbumCardProps) {
           className="flex flex-col justify-between p-3.5 rounded-md overflow-clip relative shrink-0 shadow-[0_10px_25px_#00000080] border border-solid border-white/15 w-40 h-40"
           style={{ backgroundImage: albumGradient }}
         >
-          <span className={`text-[11px] uppercase tracking-[0.08em] font-bold leading-[14px] ${albumLabelColor}`}>
+          <span className={`text-[11px] uppercase tracking-[0.08em] font-bold leading-3.5 ${albumLabelColor}`}>
             {song.album}
           </span>
           <div className="flex flex-col gap-0.5">
@@ -66,7 +66,7 @@ export function AlbumCard({ song, variant }: AlbumCardProps) {
         <h3 className="text-[19px] tracking-[-0.01em] text-center font-bold leading-6 text-text-primary">
           {song.title}
         </h3>
-        <p className="text-sm text-center font-semibold leading-[18px] text-text-muted">
+        <p className="text-sm text-center font-semibold leading-4.5 text-text-muted">
           {song.artist} • {song.year}
         </p>
       </div>
@@ -77,9 +77,9 @@ export function AlbumCard({ song, variant }: AlbumCardProps) {
           <Play size={14} fill="#FFFFFF" color="#FFFFFF" className="ml-0.5" />
         </div>
         <div className="grow flex flex-col gap-1">
-          <div className="h-1 w-full rounded-[2px] overflow-clip bg-border">
+          <div className="h-1 w-full rounded-xs overflow-clip bg-border">
             <div
-              className={`h-full rounded-[2px] ${progressColor}`}
+              className={`h-full rounded-xs ${progressColor}`}
               style={{ width: progressWidth }}
             />
           </div>

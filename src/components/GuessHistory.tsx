@@ -21,7 +21,7 @@ export function GuessHistory({ guesses }: GuessHistoryProps) {
                   {guess.text}
                 </span>
               </div>
-              <span className="text-[11px] font-semibold leading-[14px] text-danger">
+              <span className="text-[11px] font-semibold leading-3.5 text-danger">
                 {guess.checkpoint}s
               </span>
             </div>
@@ -40,7 +40,7 @@ export function GuessHistory({ guesses }: GuessHistoryProps) {
                   {guess.text}
                 </span>
               </div>
-              <span className="text-[11px] font-semibold leading-[14px] text-secondary">
+              <span className="text-[11px] font-semibold leading-3.5 text-secondary">
                 {guess.checkpoint}s
               </span>
             </div>

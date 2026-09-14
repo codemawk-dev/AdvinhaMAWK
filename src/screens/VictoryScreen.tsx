@@ -17,7 +17,7 @@ export function VictoryScreen({ onNavigate }: VictoryScreenProps) {
       <div className="flex justify-between items-center w-full py-3 px-6">
         <div className="flex items-center gap-1.5">
           <div className="rounded-full shrink-0 shadow-[0_0_10px_#10B981] bg-success w-2 h-2" />
-          <span className="text-sm font-bold leading-[18px] text-success">
+          <span className="text-sm font-bold leading-4.5 text-success">
             DESAFIO DIÁRIO CONCLUÍDO
           </span>
         </div>
@@ -35,7 +35,7 @@ export function VictoryScreen({ onNavigate }: VictoryScreenProps) {
         <div className="flex items-center justify-center rounded-full shrink-0 shadow-[0_0_20px_#10B98140] bg-[#10B98126] border-[1.5px] border-solid border-[#10B98166] w-12 h-12">
           <CheckCircle size={24} color="#10B981" strokeWidth={2.5} />
         </div>
-        <h1 className="text-2xl tracking-[-0.02em] text-center font-extrabold leading-[30px] text-text-primary">
+        <h1 className="text-2xl tracking-[-0.02em] text-center font-extrabold leading-7.5 text-text-primary">
           Você Mandou Muito Bem!
         </h1>
         <div className="inline-flex items-center py-1.5 px-3.5 rounded-full gap-1.5 bg-[#10B9811F] border border-solid border-[#10B9814D]">
@@ -69,7 +69,7 @@ export function VictoryScreen({ onNavigate }: VictoryScreenProps) {
           iconPosition="left"
         />
         <div className="pt-0.5">
-          <p className="text-[11px] text-center font-medium leading-[14px] text-text-muted">
+          <p className="text-[11px] text-center font-medium leading-3.5 text-text-muted">
             Próximo desafio diário em 05:22:18
           </p>
         </div>

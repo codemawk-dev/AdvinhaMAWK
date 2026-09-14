@@ -33,8 +33,8 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
             </span>
           </div>
         </div>
-        <div className="flex items-center py-[5px] px-2.5 rounded-lg gap-1.5 bg-surface border border-solid border-border">
-          <span className="text-[11px] font-bold leading-[14px] text-text-primary">
+        <div className="flex items-center py-1.25 px-2.5 rounded-lg gap-1.5 bg-surface border border-solid border-border">
+          <span className="text-[11px] font-bold leading-3.5 text-text-primary">
             {duel.matchId}
           </span>
           <Copy size={12} color="#8E95A5" />
@@ -44,7 +44,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
       {/* Round info */}
       <div className="flex flex-col w-full pt-2.5 pb-3.5 gap-3 px-6">
         <div className="flex justify-between items-center w-full">
-          <span className="text-[11px] uppercase tracking-[0.08em] font-bold leading-[14px] text-text-muted">
+          <span className="text-[11px] uppercase tracking-[0.08em] font-bold leading-3.5 text-text-muted">
             Rodada {duel.round} de {duel.totalRounds}
           </span>
           <div className="flex items-center gap-1">
@@ -83,11 +83,11 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
               <span className="text-xl font-extrabold leading-6 text-bg">
                 {you.initials}
               </span>
-              <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-success border-2 border-solid border-surface">
+              <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-success border-2 border-solid border-surface">
                 <Check size={10} color="#FFFFFF" strokeWidth={3} />
               </div>
             </div>
-            <span className="text-sm font-bold leading-[18px] text-text-primary">
+            <span className="text-sm font-bold leading-4.5 text-text-primary">
               {you.name}
             </span>
             <div className="py-0.5 px-2.5 rounded-full bg-[#00E5FF26]">
@@ -95,7 +95,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
                 {you.score} Ponto
               </span>
             </div>
-            <span className="text-[11px] text-center font-semibold leading-[14px] text-success">
+            <span className="text-[11px] text-center font-semibold leading-3.5 text-success">
               {you.status}
             </span>
           </div>
@@ -103,7 +103,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
           {/* VS badge */}
           <div className="flex flex-col items-center px-2 gap-1">
             <div
-              className="w-[38px] h-[38px] flex items-center justify-center rounded-full shrink-0 shadow-[0_0_14px_#FF385C66]"
+              className="w-9.5 h-9.5 flex items-center justify-center rounded-full shrink-0 shadow-[0_0_14px_#FF385C66]"
               style={{
                 backgroundImage: 'linear-gradient(135deg, #FF385C 0%, #00E5FF 100%)',
               }}
@@ -128,11 +128,11 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
               <span className="text-xl font-extrabold leading-6 text-white">
                 {opponent.initials}
               </span>
-              <div className="absolute -bottom-0.5 -right-0.5 w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning border-2 border-solid border-surface">
+              <div className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 flex items-center justify-center rounded-full bg-warning border-2 border-solid border-surface">
                 <div className="rounded-full shrink-0 bg-white w-1.5 h-1.5" />
               </div>
             </div>
-            <span className="text-sm font-bold leading-[18px] text-text-primary">
+            <span className="text-sm font-bold leading-4.5 text-text-primary">
               {opponent.name}
             </span>
             <div className="py-0.5 px-2.5 rounded-full bg-[#FF385C26]">
@@ -140,7 +140,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
                 {opponent.score} Ponto
               </span>
             </div>
-            <span className="text-[11px] text-center font-semibold leading-[14px] text-warning">
+            <span className="text-[11px] text-center font-semibold leading-3.5 text-warning">
               {opponent.status}
             </span>
           </div>
@@ -176,7 +176,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
               <span className="text-[13px] font-bold leading-4 text-text-primary">
                 {song.title}
               </span>
-              <span className="text-[11px] font-medium leading-[14px] text-text-muted">
+              <span className="text-[11px] font-medium leading-3.5 text-text-muted">
                 {song.artist}
               </span>
             </div>
@@ -199,12 +199,12 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
               <span className="text-[13px] font-semibold leading-4 text-text-muted">
                 Lucas está ouvindo a prévia...
               </span>
-              <span className="text-[11px] font-medium leading-[14px] text-[#525866]">
+              <span className="text-[11px] font-medium leading-3.5 text-[#525866]">
                 Ainda tem 08s para responder
               </span>
             </div>
           </div>
-          <span className="text-[11px] font-bold leading-[14px] text-warning">
+          <span className="text-[11px] font-bold leading-3.5 text-warning">
             DIGITANDO
           </span>
         </div>
@@ -214,7 +214,7 @@ export function DuelScreen({ onNavigate }: DuelScreenProps) {
       <div className="flex flex-col w-full mt-auto pt-3 pb-6 gap-2.5 px-6">
         {/* Reactions */}
         <div className="flex justify-between items-center w-full py-2 px-3 rounded-md bg-surface border border-solid border-border">
-          <span className="text-[11px] font-bold leading-[14px] text-text-muted">
+          <span className="text-[11px] font-bold leading-3.5 text-text-muted">
             Reações:
           </span>
           <div className="flex items-center gap-2">

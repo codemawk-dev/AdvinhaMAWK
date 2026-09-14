@@ -21,7 +21,7 @@ export function ProgressBar({
     <div className="flex flex-col w-full gap-2">
       {/* Header */}
       <div className="flex justify-between items-center w-full">
-        <span className="text-[11px] uppercase tracking-[0.06em] font-bold leading-[14px] text-text-muted">
+        <span className="text-[11px] uppercase tracking-[0.06em] font-bold leading-3.5 text-text-muted">
           {variant === 'solo' ? 'Tempo Liberado' : 'Corrida de Acerto'}
         </span>
         {variant === 'solo' ? (
@@ -29,7 +29,7 @@ export function ProgressBar({
             {currentCheckpoint}s / 15.0s
           </span>
         ) : (
-          <span className="text-[11px] font-semibold leading-[14px] text-secondary">
+          <span className="text-[11px] font-semibold leading-3.5 text-secondary">
             Quem acertar primeiro pontua!
           </span>
         )}

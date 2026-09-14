@@ -20,7 +20,7 @@ export function AudioVisualizer({
         return (
           <div
             key={i}
-            className={`w-[3px] rounded-[2px] shrink-0 transition-colors duration-300 ${
+            className={`w-0.75 rounded-xs shrink-0 transition-colors duration-300 ${
               isActive ? 'bg-primary' : variant === 'muted' ? 'bg-border' : 'bg-border'
             }`}
             style={{

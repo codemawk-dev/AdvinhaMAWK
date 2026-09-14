@@ -63,7 +63,7 @@ export function ActionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center justify-center w-full py-3.5 px-5 rounded-md gap-2 cursor-pointer transition-all duration-200 hover:brightness-110 active:scale-[0.98] text-sm leading-[18px] ${variantClass} ${className}`}
+      className={`flex items-center justify-center w-full py-3.5 px-5 rounded-md gap-2 cursor-pointer transition-all duration-200 hover:brightness-110 active:scale-[0.98] text-sm leading-4.5 ${variantClass} ${className}`}
       style={style}
     >
       {Icon && iconPosition === 'left' && (

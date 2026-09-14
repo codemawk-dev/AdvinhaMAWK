@@ -31,8 +31,8 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
           >
             <ChevronLeft size={18} color="#F3F4F6" strokeWidth={2.5} />
           </button>
-          <div className="flex items-center py-[5px] px-3 rounded-full gap-1.5 bg-[#00E5FF1A] border border-solid border-[#00E5FF4D]">
-            <span className="text-[11px] uppercase tracking-[0.05em] font-bold leading-[14px] text-secondary">
+          <div className="flex items-center py-1.25 px-3 rounded-full gap-1.5 bg-[#00E5FF1A] border border-solid border-[#00E5FF4D]">
+            <span className="text-[11px] uppercase tracking-wider font-bold leading-3.5 text-secondary">
               Edição Brasil
             </span>
           </div>
@@ -69,14 +69,14 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
         >
           <div className="flex items-center gap-3">
             <div
-              className="w-[42px] h-[42px] flex items-center justify-center rounded-[10px] shrink-0 shadow-[0_4px_12px_#FF385C66]"
+              className="w-10.5 h-10.5 flex items-center justify-center rounded-[10px] shrink-0 shadow-[0_4px_12px_#FF385C66]"
               style={{ backgroundImage: featured.iconBg }}
             >
               <featured.icon size={22} color={featured.iconColor} strokeWidth={2} />
             </div>
             <div className="flex flex-col gap-0.5 text-left">
               <div className="flex items-center gap-1.5">
-                <span className="text-[15px] font-bold leading-[18px] text-text-primary">
+                <span className="text-[15px] font-bold leading-4.5 text-text-primary">
                   {featured.name}
                 </span>
                 <span className="inline-block py-0.5 px-1.5 rounded-[4px] bg-[#FF385C33] text-[10px] font-bold leading-3 text-primary">
@@ -129,10 +129,10 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-bold leading-[18px] text-text-primary">
+                  <span className="text-sm font-bold leading-4.5 text-text-primary">
                     {genre.name}
                   </span>
-                  <span className="text-[11px] font-medium leading-[14px] text-text-muted">
+                  <span className="text-[11px] font-medium leading-3.5 text-text-muted">
                     {genre.artists}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
                 <span className="text-[13px] font-bold leading-4 text-text-primary">
                   {genre.name}
                 </span>
-                <span className="text-[11px] font-medium leading-[14px] text-text-muted">
+                <span className="text-[11px] font-medium leading-3.5 text-text-muted">
                   {genre.artists}
                 </span>
               </div>
@@ -190,7 +190,7 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
         <button
           type="button"
           onClick={() => onNavigate('duel')}
-          className="flex items-center justify-between py-4 px-5 rounded-[16px] shadow-[0_6px_20px_#00E5FF40] border-[1.5px] border-solid border-secondary cursor-pointer transition-all hover:brightness-110 active:scale-[0.98]"
+          className="flex items-center justify-between py-4 px-5 rounded-2xl shadow-[0_6px_20px_#00E5FF40] border-[1.5px] border-solid border-secondary cursor-pointer transition-all hover:brightness-110 active:scale-[0.98]"
           style={{
             backgroundImage:
               'linear-gradient(135deg, rgba(255,56,92,0.2) 0%, rgba(0,229,255,0.2) 100%)',
@@ -220,16 +220,16 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
               </svg>
             </div>
             <div className="flex flex-col gap-0.5 text-left">
-              <span className="text-sm font-extrabold leading-[18px] text-text-primary">
+              <span className="text-sm font-extrabold leading-4.5 text-text-primary">
                 Criar Duelo 1x1
               </span>
-              <span className="text-[11px] font-medium leading-[14px] text-secondary">
+              <span className="text-[11px] font-medium leading-3.5 text-secondary">
                 Gere um link e desafie um amigo
               </span>
             </div>
           </div>
           <div className="py-1.5 px-3 rounded-full bg-secondary">
-            <span className="text-[11px] font-extrabold leading-[14px] text-bg">
+            <span className="text-[11px] font-extrabold leading-3.5 text-bg">
               DESAFIAR
             </span>
           </div>
@@ -244,7 +244,7 @@ export function CategoriesScreen({ onNavigate }: CategoriesScreenProps) {
             backgroundImage: 'linear-gradient(135deg, #FF385C 0%, #D6294D 100%)',
           }}
         >
-          <span className="text-sm font-bold leading-[18px] text-white">
+          <span className="text-sm font-bold leading-4.5 text-white">
             Jogar Solo ({selectedName})
           </span>
           <Play size={16} color="#FFFFFF" strokeWidth={2.5} />
