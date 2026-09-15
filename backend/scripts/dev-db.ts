@@ -5,7 +5,7 @@ import EmbeddedPostgres from 'embedded-postgres';
 
 const url = new URL(process.env.DATABASE_URL ?? '');
 if (!['localhost', '127.0.0.1'].includes(url.hostname)) throw new Error('db:local permite somente DATABASE_URL local.');
-const directory = resolve('.local/postgres');
+const directory = resolve(process.env.LOCAL_POSTGRES_DIR || '.local/postgres');
 const databaseName = decodeURIComponent(url.pathname.slice(1));
 if (!databaseName) throw new Error('DATABASE_URL precisa informar o banco.');
 await mkdir(directory, { recursive: true });

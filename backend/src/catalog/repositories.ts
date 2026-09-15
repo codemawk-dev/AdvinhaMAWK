@@ -38,7 +38,7 @@ export class ArtistRepository {
 export class SongRepository {
   constructor(private db: PrismaClient) {}
   playable() {
-    return this.db.song.findMany({ where: { active: true, artist: { active: true } }, include: { artist: true } });
+    return this.db.song.findMany({ where: { active: true, artist: { active: true }, OR: [{ audioUnavailableUntil: null }, { audioUnavailableUntil: { lte: new Date() } }] }, include: { artist: true } });
   }
   async ingest(artist: Artist, track: AppleTrack): Promise<boolean> {
     if (!track.previewUrl || !isAppleAudioUrl(track.previewUrl)) {

@@ -14,28 +14,36 @@ async function request(path: string, body?: unknown) {
 assert.equal((await (await request('/health')).json()).status, 'ok');
 const catalog = await (await request('/catalog/summary')).json();
 assert.ok(catalog.songs >= 5000);
-await request('/sessions', { displayName: 'Validação integrada' });
-assert.equal((await (await request('/sessions/me')).json()).displayName, 'Validação integrada');
+await request('/sessions', { displayName: 'Validação progressiva' });
+assert.equal((await (await request('/sessions/me')).json()).displayName, 'Validação progressiva');
 const { gameId } = await (await request('/games', { rounds: 10 })).json();
+const suggestions = (await (await request('/catalog/search?q=amor')).json()).songs;
+assert.ok(suggestions.length >= 5);
 for (let index = 0; index < 10; index++) {
-  const round = await (await request(`/games/${gameId}/round`)).json();
-  assert.equal(round.options.length, 4);
-  if (index === 0) {
-    assert.deepEqual(await (await request(`/games/${gameId}/round`)).json(), round);
-    const audio = await request(round.previewUrl);
-    assert.match(audio.headers.get('content-type') ?? '', /audio\/mpeg/);
-    const bytes = (await audio.arrayBuffer()).byteLength;
-    assert.ok(bytes > 1000);
-    console.log(JSON.stringify({ audio: 'ok', bytes, duration: round.duration }));
+  for (let clue = 0; clue < 5; clue++) {
+    const round = await (await request(`/games/${gameId}/round`)).json();
+    assert.equal(round.attempt, clue);
+    assert.equal(round.duration, [0.1, 0.5, 2, 8, 15][clue]);
+    assert.equal('options' in round, false);
+    if (index === 0) {
+      assert.deepEqual(await (await request(`/games/${gameId}/round`)).json(), round);
+      const audio = await request(round.previewUrl);
+      assert.match(audio.headers.get('content-type') ?? '', /audio\/wav/);
+      const clip = Buffer.from(await audio.arrayBuffer());
+      assert.equal(clip.readUInt32LE(40) / (44100 * 2), round.duration);
+      console.log(JSON.stringify({ audio: 'ok', bytes: clip.length, duration: round.duration }));
+    }
+    const skip = clue === 0;
+    const answer = await (await request(`/games/${gameId}/${skip ? 'skip' : 'answer'}`, {
+      roundId: round.roundId, attempt: round.attempt, revision: round.revision, ...(skip ? {} : { songId: suggestions[clue].id }),
+    })).json();
+    if (answer.roundFinished) { assert.equal(answer.completed, index === 9); break; }
+    assert.equal('correctAnswer' in answer, false);
   }
-  const answer = await (await request(`/games/${gameId}/${index === 0 ? 'skip' : 'answer'}`, {
-    roundId: round.roundId, ...(index === 0 ? {} : { answerId: round.options[0].id }),
-  })).json();
-  assert.equal(answer.completed, index === 9);
 }
 const result = await (await request(`/games/${gameId}/result`)).json();
 assert.equal(result.status, 'COMPLETED');
 assert.equal(result.rounds.length, 10);
 const ranking = await (await request('/rankings/all-time')).json();
-assert.ok(ranking.entries.some((entry: { displayName: string }) => entry.displayName === 'Validação integrada'));
+assert.ok(ranking.entries.some((entry: { displayName: string }) => entry.displayName === 'Validação progressiva'));
 console.log(JSON.stringify({ stack: 'ok', catalog, completedRounds: result.rounds.length, score: result.score }));

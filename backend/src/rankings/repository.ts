@@ -12,7 +12,7 @@ export class RankingRepository {
     const rows = await this.db.$queryRaw<{ playerId: string; displayName: string; score: number }[]>(Prisma.sql`
       SELECT u.id AS "playerId", u."displayName", MAX(g.score)::integer AS score
       FROM "Game" g JOIN "User" u ON u.id = g."userId"
-      WHERE g.status = 'COMPLETED' AND g."totalRounds" = 10
+      WHERE g.status = 'COMPLETED' AND g."totalRounds" = 10 AND g."rulesVersion" = 2
       ${since ? Prisma.sql`AND g."completedAt" >= ${since}` : Prisma.empty}
       GROUP BY u.id, u."displayName" ORDER BY score DESC, u.id ASC LIMIT 100
     `);

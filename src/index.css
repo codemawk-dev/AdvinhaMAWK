@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+.clue-timeline { height: 7px; background: #252a35; border-radius: 5px; position: relative; overflow: hidden; }
+.clue-timeline span { position: absolute; left: 0; top: 0; height: 100%; min-width: 2px; }
+.clue-timeline .unlocked { background: #41545e; }
+.clue-timeline .played { background: #5be2f4; }
+.clue-steps { display: flex; justify-content: space-between; list-style: none; padding: 10px 0; color: #687180; font-size: 12px; }
+.clue-steps .unlocked { color: #b5c9cd; }
+.clue-steps [aria-current] { color: #67e8f9; font-weight: 800; }
+.guess-form { display: flex; flex-direction: column; gap: 12px; }
+.song-search-wrap { display: flex; gap: 10px; align-items: center; border: 1px solid #45515f; border-radius: 12px; padding: 14px; background: #171b23; }
+.song-search-wrap:focus-within { outline: 2px solid #67e8f9; outline-offset: 2px; }
+.song-search-wrap input { width: 100%; min-width: 0; background: none; outline: none; color: #f3f4f6; font-size: 16px; }
+.suggestion-panel { border: 1px solid #364252; border-radius: 12px; overflow: hidden; background: #151b25; }
+.suggestion-panel ul { list-style: none; padding: 0; margin: 0; max-height: 260px; overflow-y: auto; }
+.suggestion-panel li { padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #283140; }
+.suggestion-panel li:hover, .suggestion-panel li[aria-selected=true] { background: #243442; }
+.suggestion-panel strong, .suggestion-panel span { display: block; }
+.suggestion-panel span { font-size: 13px; color: #a8b4c6; margin-top: 3px; }
+.suggestion-panel p, .clue-help { color: #a8b4c6; font-size: 12px; line-height: 1.6; padding: 12px; }
+.clue-help { text-align: center; }
+.guess-history { padding: 0; margin: 0 0 18px; list-style: none; }
+.guess-history li { display: flex; align-items: center; gap: 10px; padding: 9px 0; color: #d79aa5; font-size: 13px; }
+.guess-history span { flex: 1; }
+.guess-history small { display: block; color: #8994a6; }
+.recovery-notice { padding: 12px; margin: 14px 0; border-radius: 8px; background: #15343c; color: #bcebf3; font-size: 13px; line-height: 1.5; }
+
 @theme {
   /* ── Colors ── */
   --color-bg: #0B0D12;

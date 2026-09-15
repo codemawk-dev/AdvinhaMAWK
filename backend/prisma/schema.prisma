@@ -60,6 +60,7 @@ model Song {
   active           Boolean  @default(true)
   lastSeenAt       DateTime @default(now())
   lastVerifiedAt   DateTime @default(now())
+  audioUnavailableUntil DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   rounds           GameRound[]
@@ -80,6 +81,7 @@ model Game {
   userId       String   @db.Uuid
   user         User     @relation(fields: [userId], references: [id])
   status       GameStatus @default(ACTIVE)
+  rulesVersion Int @default(2)
   totalRounds  Int
   currentRound Int      @default(0)
   score        Int      @default(0)
@@ -101,7 +103,9 @@ model GameRound {
   position         Int
   songId           String   @db.Uuid
   song             Song     @relation(fields: [songId], references: [id])
-  duration         Int
+  duration         Float
+  clueIndex        Int @default(0)
+  revision         Int @default(0)
   difficultyWeight Float
   // Immutable snapshots keep ongoing games stable when the catalogue changes.
   audioUrl         String
@@ -113,6 +117,7 @@ model GameRound {
   answeredAt       DateTime?
   options          RoundOption[]
   answer           PlayerAnswer?
+  guesses          GuessAttempt[]
 
   @@unique([gameId, position])
   @@index([songId])
@@ -147,4 +152,18 @@ model CatalogLease {
   id        String   @id
   owner     String
   expiresAt DateTime
+}
+
+model GuessAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  roundId String @db.Uuid
+  round GameRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  revision Int
+  position Int
+  songId String? @db.Uuid
+  title String?
+  artist String?
+  correct Boolean
+  createdAt DateTime @default(now())
+  @@unique([roundId, revision, position])
 }

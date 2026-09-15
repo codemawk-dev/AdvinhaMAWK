@@ -22,6 +22,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [audioRevision, setAudioRevision] = useState(0);
   const locked = useRef(false);
   useEffect(() => {
     let active = true;
@@ -63,7 +64,11 @@ export default function App() {
   });
   const submit = (option: string | null) => void run(async () => {
     if (!gameId || !round) return;
-    try { const response = await api.answer(gameId, round.roundId, option); setAnswer(response); setScreen('feedback'); }
+    try {
+      const response = await api.answer(gameId, round, option);
+      if (response.roundFinished) { setAnswer(response); setScreen('feedback'); }
+      else await load(gameId);
+    }
     catch (error) {
       // A response may have been committed even when the network dropped its reply.
       if (error instanceof ApiError && (error.status === 0 || error.status === 409)) {
@@ -73,10 +78,10 @@ export default function App() {
   });
   const home = () => { if (!busy) { setScreen('home'); setError(''); } };
   return <GameShell onHome={screen === 'home' ? undefined : home}>
-    {error && <div className="screen-error"><ErrorNotice message={error} /></div>}
+    {error && <div className="screen-error"><ErrorNotice message={error} retry={gameId && !busy ? () => void run(async () => { await load(gameId); setAudioRevision(value => value + 1); }) : undefined} /></div>}
     {loading || (busy && screen === 'home') ? <Loading /> : <>
       {screen === 'home' && <HomeScreen profile={profile} start={start} ranking={() => setScreen('ranking')} resume={gameId ? () => void run(() => load(gameId)) : undefined} />}
-      {screen === 'round' && game && round && <RoundScreen key={round.roundId} game={game} round={round} submit={submit} busy={busy} />}
+      {screen === 'round' && game && round && <RoundScreen key={`${round.roundId}-${round.attempt}-${round.revision}-${audioRevision}`} game={game} round={round} submit={submit} busy={busy} recover={() => void run(async () => { if (gameId) { await load(gameId); setAudioRevision(value => value + 1); } })} />}
       {screen === 'feedback' && answer && <FeedbackScreen answer={answer} busy={busy} next={() => void run(async () => { if (gameId) await load(gameId); })} />}
       {screen === 'result' && result && <ResultScreen result={result} restart={() => start(profile?.displayName ?? 'Jogador')} ranking={() => setScreen('ranking')} />}
       {screen === 'ranking' && <RankingScreen userId={profile?.userId} />}

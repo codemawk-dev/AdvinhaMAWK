@@ -5,9 +5,8 @@ import type { Config } from '../core/config.js';
 import { authenticate, createSession } from '../core/auth.js';
 import { AppError } from '../core/errors.js';
 import type { GameService } from './service.js';
-import type { AudioProvider } from '../audio/provider.js';
 const gameParams = z.object({ gameId: z.uuid() });
-export function gameRoutes(app: FastifyInstance, games: GameService, audio: AudioProvider, db: PrismaClient, config: Config) {
+export function gameRoutes(app: FastifyInstance, games: GameService, db: PrismaClient, config: Config) {
   const cookie = { httpOnly: true, sameSite: 'strict' as const, secure: config.NODE_ENV === 'production', path: '/', maxAge: 30 * 86400 };
   app.post('/sessions', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
     const body = z.object({ displayName: z.string().trim().min(1).max(40).default('Jogador') }).strict().parse(request.body ?? {});
@@ -40,28 +39,28 @@ export function gameRoutes(app: FastifyInstance, games: GameService, audio: Audi
   });
   app.post('/games/:gameId/answer', async request => {
     const userId = await authenticate(request);
-    const body = z.object({ roundId: z.uuid(), answerId: z.uuid() }).strict().parse(request.body);
-    return games.answer(gameParams.parse(request.params).gameId, userId, body.roundId, body.answerId);
+    const body = z.object({ roundId: z.uuid(), songId: z.uuid(), attempt: z.number().int().min(0).max(4), revision: z.number().int().min(0) }).strict().parse(request.body);
+    return games.answer(gameParams.parse(request.params).gameId, userId, body.roundId, body.songId, body.attempt, body.revision);
   });
   app.post('/games/:gameId/skip', async request => {
     const userId = await authenticate(request);
-    const body = z.object({ roundId: z.uuid() }).strict().parse(request.body);
-    return games.answer(gameParams.parse(request.params).gameId, userId, body.roundId, null);
+    const body = z.object({ roundId: z.uuid(), attempt: z.number().int().min(0).max(4), revision: z.number().int().min(0) }).strict().parse(request.body);
+    return games.answer(gameParams.parse(request.params).gameId, userId, body.roundId, null, body.attempt, body.revision);
   });
   app.get('/games/:gameId/result', async request => {
     const userId = await authenticate(request);
     return games.result(gameParams.parse(request.params).gameId, userId);
   });
-  app.get('/games/:gameId/rounds/:roundId/audio', { config: { rateLimit: { max: 15, timeWindow: '1 minute' } } }, async (request, reply) => {
+  app.get('/games/:gameId/rounds/:roundId/audio', { config: { rateLimit: { max: 90, timeWindow: '1 minute' } } }, async (request, reply) => {
     const userId = await authenticate(request);
     const { gameId, roundId } = gameParams.extend({ roundId: z.uuid() }).parse(request.params);
-    const source = await games.audio(gameId, userId, roundId);
+    const { attempt, revision } = z.object({ attempt: z.coerce.number().int().min(0).max(4), revision: z.coerce.number().int().min(0) }).strict().parse(request.query);
     const controller = new AbortController();
     const onClose = () => { if (!reply.raw.writableEnded) controller.abort(); };
     reply.raw.once('close', onClose);
     try {
-      const clip = await audio.clip(source.audioUrl, source.duration, controller.signal);
-      return reply.header('Content-Type', 'audio/mpeg').header('Cache-Control', 'private, no-store')
+      const clip = await games.audio(gameId, userId, roundId, attempt, revision, controller.signal);
+      return reply.header('Content-Type', 'audio/wav').header('Cache-Control', 'private, no-store')
         .header('Accept-Ranges', 'none').send(clip);
     } finally { reply.raw.removeListener('close', onClose); }
   });

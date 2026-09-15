@@ -4,12 +4,13 @@ export interface GameSummary {
   currentRound: number; score: number; streak: number; maxStreak: number;
 }
 export interface Round {
-  roundId: string; previewUrl: string; duration: number; deadline: string;
-  options: { id: string; title: string }[];
+  roundId: string; previewUrl: string; duration: number; attempt: number; revision: number;
+  clues: number[]; guesses: { title: string | null; artist: string | null; correct: boolean }[]; replaced: boolean;
 }
+export interface SongSuggestion { id: string; title: string; artist: string }
 export interface Answer {
-  correct: boolean; points: number; streak: number; score: number; completed: boolean;
-  correctAnswer: { title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
+  correct: boolean; points: number; streak: number; score: number; completed: boolean; roundFinished: boolean;
+  correctAnswer?: { title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
 }
 export interface Result extends GameSummary {
   correctAnswers: number;
@@ -28,7 +29,7 @@ export async function request<T>(path: string, body?: unknown): Promise<T> {
     response = await fetch(`/api${path}`, {
       method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store',
       ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(60000),
     });
   } catch { throw new ApiError(0, 'NETWORK', 'Não foi possível conectar. Confira sua conexão e tente novamente.'); }
   let data: unknown;
@@ -46,12 +47,13 @@ export const api = {
   create: () => request<{ gameId: string }>('/games', { rounds: 10 }),
   game: (id: string) => request<GameSummary>(`/games/${id}`),
   round: (id: string) => request<Round>(`/games/${id}/round`),
-  answer: (id: string, roundId: string, answerId: string | null) => request<Answer>(`/games/${id}/${answerId === null ? 'skip' : 'answer'}`, { roundId, ...(answerId === null ? {} : { answerId }) }),
+  answer: (id: string, round: Round, songId: string | null) => request<Answer>(`/games/${id}/${songId === null ? 'skip' : 'answer'}`, { roundId: round.roundId, attempt: round.attempt, revision: round.revision, ...(songId === null ? {} : { songId }) }),
+  search: (query: string) => request<{ songs: SongSuggestion[] }>(`/catalog/search?q=${encodeURIComponent(query)}`),
   result: (id: string) => request<Result>(`/games/${id}/result`),
   ranking: (period: RankingPeriod) => request<Ranking>(`/rankings/${period}`),
   catalog: () => request<{ songs: number; artists: number; groups: number }>('/catalog/summary'),
 };
 export function audioPath(source: string): string {
-  if (!/^\/games\/[a-f0-9-]+\/rounds\/[a-f0-9-]+\/audio$/.test(source)) throw new Error('Trecho inválido.');
+  if (!/^\/games\/[a-f0-9-]+\/rounds\/[a-f0-9-]+\/audio\?attempt=[0-4]&revision=\d+$/.test(source)) throw new Error('Trecho inválido.');
   return `/api${source}`;
 }

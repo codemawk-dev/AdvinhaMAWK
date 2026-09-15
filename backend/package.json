@@ -22,6 +22,7 @@
     "postinstall": "prisma generate",
     "test:live": "tsx scripts/smoke-live.ts",
     "test:stack": "tsx scripts/smoke-stack.ts",
+    "catalog:audit-audio": "tsx scripts/audit-audio.ts",
     "db:local": "tsx scripts/dev-db.ts",
     "db:local:stop": "tsx scripts/stop-dev-db.ts",
     "supabase:setup": "tsx scripts/supabase-setup.ts"

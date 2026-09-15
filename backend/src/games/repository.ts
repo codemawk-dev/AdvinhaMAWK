@@ -22,10 +22,10 @@ export class GameRepository {
   }
   async summary(id: string, userId: string) {
     const game = await this.db.game.findFirst({ where: { id, userId }, select: {
-      id: true, status: true, totalRounds: true, currentRound: true, score: true, streak: true, maxStreak: true, expiresAt: true, completedAt: true,
+      id: true, status: true, rulesVersion: true, totalRounds: true, currentRound: true, score: true, streak: true, maxStreak: true, expiresAt: true, completedAt: true,
     } });
     if (!game) throw new AppError(404, 'GAME_NOT_FOUND', 'Partida não encontrada.');
-    if (game.status === 'ACTIVE' && game.expiresAt <= new Date()) return { ...game, status: 'EXPIRED' as const };
+    if (game.status === 'ACTIVE' && (game.expiresAt <= new Date() || game.rulesVersion !== 2)) return { ...game, status: 'EXPIRED' as const };
     return game;
   }
 }

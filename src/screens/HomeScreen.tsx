@@ -10,7 +10,7 @@ export function HomeScreen({ profile, start, ranking, resume }: { profile: Profi
     <h1>Reconhece só<br />pelo <span className="gradient-text">comecinho?</span></h1>
     <p className="lead">De um modão ao último refrão que grudou na cabeça. Dê o play e descubra quantas você conhece.</p>
     <div className="record-art" aria-hidden="true"><div className="record-groove"><span><Disc3 size={58} strokeWidth={1.2} /></span></div><span className="record-tag">MIX BRASIL ↗</span></div>
-    <div className="feature-grid"><div><Shuffle size={20} /><strong>10 rodadas</strong><span>Uma mistura a cada partida</span></div><div><Timer size={20} /><strong>1 a 15 segundos</strong><span>Cada trecho, um desafio</span></div></div>
+    <div className="feature-grid"><div><Shuffle size={20} /><strong>10 músicas</strong><span>Uma mistura a cada partida</span></div><div><Timer size={20} /><strong>0,1 a 15 segundos</strong><span>Cinco pistas por música</span></div></div>
     {catalog && <p className="catalog-count">{catalog.songs.toLocaleString('pt-BR')} músicas · {catalog.artists} artistas no catálogo</p>}
     <form onSubmit={event => { event.preventDefault(); start(profile?.displayName ?? (name.trim() || 'Jogador')); }} className="home-form">
       {profile ? <p className="player-greeting">Pronto para mais uma, <strong>{profile.displayName}</strong>?</p> : <label className="field-label">Como podemos chamar você?<input aria-label="Seu nome" value={name} maxLength={40} placeholder="Seu nome ou apelido" onChange={event => setName(event.target.value)} /></label>}

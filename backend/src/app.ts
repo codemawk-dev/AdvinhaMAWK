@@ -5,6 +5,8 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { ZodError } from 'zod';
+import { z } from 'zod';
+import { normalizeName } from './catalog/normalization.js';
 import type { Config } from './core/config.js';
 import { AppError } from './core/errors.js';
 import { ArtistRepository, SongRepository } from './catalog/repositories.js';
@@ -49,7 +51,7 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   });
   const songs = new SongRepository(db);
   const catalog = new CatalogService(db, new ArtistRepository(db), songs, dependencies.apple ?? new ITunesClient(config.APPLE_REQUEST_DELAY_MS), config, app.log);
-  const games = new GameService(new GameRepository(db), songs);
+  const games = new GameService(new GameRepository(db), songs, dependencies.audio ?? new ApplePreviewProvider(config.FFMPEG_PATH));
   const rankings = new RankingRepository(db);
   app.get('/health', async (_request, reply) => {
     try { await db.$queryRaw`SELECT 1`; return { status: 'ok', database: 'up' }; }
@@ -63,7 +65,17 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
     ]);
     return { songs, artists, groups };
   });
-  gameRoutes(app, games, dependencies.audio ?? new ApplePreviewProvider(config.FFMPEG_PATH), db, config);
+  app.get('/catalog/search', { config: { rateLimit: { max: 180, timeWindow: '1 minute' } } }, async request => {
+    const { q } = z.object({ q: z.string().trim().min(2).max(100) }).strict().parse(request.query);
+    const tokens = normalizeName(q).split(' ').filter(Boolean).slice(0, 8);
+    if (!tokens.length) return { songs: [] };
+    const rows = await db.song.findMany({ where: { active: true, artist: { active: true }, AND: tokens.map(token => ({ OR: [
+      { normalizedTitle: { contains: token } }, { artist: { normalizedName: { contains: token } } },
+    ] })) }, orderBy: [{ popularityWeight: 'desc' }, { title: 'asc' }, { id: 'asc' }], take: 15,
+      select: { id: true, title: true, artist: { select: { name: true } } } });
+    return { songs: rows.map(row => ({ id: row.id, title: row.title, artist: row.artist.name })) };
+  });
+  gameRoutes(app, games, db, config);
   await app.register(async scope => catalogRoutes(scope, db, catalog, config), { prefix: '/admin' });
   app.get('/rankings', async () => rankings.list('all-time'));
   for (const period of ['daily', 'weekly', 'all-time'] satisfies RankingPeriod[]) app.get(`/rankings/${period}`, async () => rankings.list(period));

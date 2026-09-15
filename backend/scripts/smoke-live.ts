@@ -26,7 +26,8 @@ try {
       console.log(JSON.stringify({ audioStatus: audio.statusCode, audioBytes: audio.rawPayload.length, duration: round.duration }));
       if (audio.statusCode !== 200) throw new Error(audio.body);
     }
-    const answer = await app.inject({ method: 'POST', url: `/games/${game.gameId}/answer`, headers, payload: { roundId: round.roundId, answerId: round.options[0]!.id } });
+    const target = await database.db.gameRound.findUniqueOrThrow({ where: { id: round.roundId } });
+    const answer = await app.inject({ method: 'POST', url: `/games/${game.gameId}/answer`, headers, payload: { roundId: round.roundId, songId: target.songId, attempt: round.attempt, revision: round.revision } });
     if (answer.statusCode !== 200) throw new Error(answer.body);
   }
   const result = await app.inject({ url: `/games/${game.gameId}/result`, headers });

@@ -5,16 +5,22 @@ import { buildApp } from '../src/app.js';
 import { readConfig } from '../src/core/config.js';
 import { ArtistRepository, SongRepository } from '../src/catalog/repositories.js';
 import { CatalogService } from '../src/catalog/service.js';
+import { AudioSourceError } from '../src/audio/provider.js';
 import { testDatabase } from './database.js';
 import { song } from './fixtures.js';
 import type { AnswerResponse, RoundResponse } from '../src/games/service.js';
 import type { AppleTrack } from '../src/catalog/itunes-client.js';
 
-describe('API + migrations + PostgreSQL real', () => {
+describe('API progressiva + migrations + PostgreSQL real', () => {
   let database: Awaited<ReturnType<typeof testDatabase>>;
   let application: Awaited<ReturnType<typeof buildApp>>;
   let token: string;
   const config = readConfig({ DATABASE_URL: 'postgresql://unused', JWT_SECRET: 'test-secret-with-more-than-32-characters', ADMIN_API_KEY: 'test-admin-key-long-enough', NODE_ENV: 'test', SCHEDULER_ENABLED: 'false' });
+  const audio = { clip: vi.fn(async (source: string) => {
+    if (source.endsWith('/unavailable')) throw new AudioSourceError(true);
+    if (source.endsWith('/outage')) throw new AudioSourceError(false);
+    return Buffer.from('test wave audio');
+  }) };
   beforeAll(async () => {
     database = await testDatabase();
     for (let group = 0; group < 9; group++) await database.db.internalCategory.create({ data: { id: `group${group}`, name: `Grupo ${group}` } });
@@ -22,124 +28,137 @@ describe('API + migrations + PostgreSQL real', () => {
       const { artist, ...data } = song(i);
       await database.db.artist.create({ data: artist }); await database.db.song.create({ data });
     }
-    application = await buildApp(config, { db: database.db, logger: false,
-      audio: { clip: async () => Buffer.from('test audio') },
-      apple: { searchArtist: async () => [], lookupTracks: async () => [] },
-    });
-    const session = await application.app.inject({ method: 'POST', url: '/sessions', payload: { displayName: 'Teste' } });
-    token = session.json<{ accessToken: string }>().accessToken;
+    application = await buildApp(config, { db: database.db, logger: false, audio,
+      apple: { searchArtist: async () => [], lookupTracks: async () => [] } });
+    token = (await application.app.inject({ method: 'POST', url: '/sessions', payload: { displayName: 'Teste' } })).json<{ accessToken: string }>().accessToken;
   }, 60000);
   afterAll(async () => { await application?.app.close(); await database?.stop(); });
   const headers = () => ({ authorization: `Bearer ${token}` });
-  let createAddress = 1;
+  let address = 1;
   async function create(rounds = 10) {
-    const response = await application.app.inject({ method: 'POST', url: '/games', remoteAddress: '127.0.1.' + createAddress++, headers: headers(), payload: { rounds } });
+    const response = await application.app.inject({ method: 'POST', url: '/games', remoteAddress: '127.0.1.' + address++, headers: headers(), payload: { rounds } });
     expect(response.statusCode, response.body).toBe(201); return response.json<{ gameId: string }>().gameId;
   }
   async function round(id: string) {
     const response = await application.app.inject({ url: `/games/${id}/round`, headers: headers() });
     expect(response.statusCode, response.body).toBe(200); return response.json<RoundResponse>();
   }
-  async function answer(id: string, current: RoundResponse) {
-    const correct = await database.db.roundOption.findFirstOrThrow({ where: { roundId: current.roundId, isCorrect: true } });
-    return application.app.inject({ method: 'POST', url: `/games/${id}/answer`, headers: headers(), payload: { roundId: current.roundId, answerId: correct.id } });
+  async function answer(id: string, current: RoundResponse, guess?: string | null) {
+    const target = await database.db.gameRound.findUniqueOrThrow({ where: { id: current.roundId } });
+    const songId = guess === undefined ? target.songId : guess;
+    return application.app.inject({ method: 'POST', url: `/games/${id}/${songId === null ? 'skip' : 'answer'}`, headers: headers(),
+      payload: { roundId: current.roundId, attempt: current.attempt, revision: current.revision, ...(songId === null ? {} : { songId }) } });
   }
-  it('health verifica o banco', async () => expect((await application.app.inject('/health')).json()).toEqual({ status: 'ok', database: 'up' }));
-  it('recupera perfil autenticado e expõe apenas contagens do catálogo', async () => {
+  it('verifica health, perfil e contagens sem expor catálogo bruto', async () => {
+    expect((await application.app.inject('/health')).json()).toEqual({ status: 'ok', database: 'up' });
     expect((await application.app.inject('/sessions/me')).statusCode).toBe(401);
-    const profile = await application.app.inject({ url: '/sessions/me', headers: headers() });
-    expect(profile.json()).toEqual({ userId: expect.any(String), displayName: 'Teste' });
+    expect((await application.app.inject({ url: '/sessions/me', headers: headers() })).json()).toMatchObject({ displayName: 'Teste' });
     expect((await application.app.inject('/catalog/summary')).json()).toEqual({ songs: 45, artists: 45, groups: 9 });
   });
-  it('pula sem alternativa, zera pontos e impede avanço duplicado', async () => {
-    const id = await create(1); const current = await round(id);
-    const skip = () => application.app.inject({ method: 'POST', url: `/games/${id}/skip`, headers: headers(), payload: { roundId: current.roundId } });
-    const responses = await Promise.all([skip(), skip()]);
-    expect(responses.map(r => r.statusCode).sort()).toEqual([200, 409]);
-    expect(responses.find(r => r.statusCode === 200)!.json()).toMatchObject({ correct: false, points: 0, completed: true });
-    expect(await database.db.playerAnswer.findUnique({ where: { roundId: current.roundId } })).toMatchObject({ optionId: null });
-    const result = (await application.app.inject({ url: `/games/${id}/result`, headers: headers() })).json();
-    expect(result).toMatchObject({ correctAnswers: 0, rounds: [{ position: 0, answer: { correct: false, points: 0 } }] });
-    expect(JSON.stringify(result)).not.toMatch(/audioUrl|isCorrect|appleTrackId|optionId/);
+  it('busca títulos e artistas sem acento, limitada e sem resposta/URL', async () => {
+    for (const q of ['Canção 44', 'cancao 44', 'artista 44']) {
+      const response = await application.app.inject('/catalog/search?q=' + encodeURIComponent(q));
+      const rows = response.json<{ songs: { id: string; title: string; artist: string }[] }>().songs;
+      expect(rows.some(s => s.title === 'Canção 44')).toBe(true);
+      expect(rows.length).toBeLessThanOrEqual(15);
+      expect(Object.keys(rows[0]!).sort()).toEqual(['artist', 'id', 'title']);
+      expect(response.body).not.toMatch(/previewUrl|isCorrect|appleTrackId/);
+    }
+    expect((await application.app.inject('/catalog/search?q=a')).statusCode).toBe(400);
   });
-  it('recusa categorias, dificuldade e campos extras no POST /games', async () => {
-    for (const payload of [{ category: 'sertanejo' }, { difficulty: 'easy' }, { rounds: 10, score: 999 }]) {
+  it('não aceita categorias ou pontuação fornecida pelo cliente', async () => {
+    for (const payload of [{ category: 'rock' }, { difficulty: 'easy' }, { rounds: 10, score: 999 }])
       expect((await application.app.inject({ method: 'POST', url: '/games', headers: headers(), payload })).statusCode).toBe(400);
-    }
   });
-  it('inicia sessão implícita com cookie e joga sem configuração musical', async () => {
-    const response = await application.app.inject({ method: 'POST', url: '/games' });
-    expect(response.statusCode).toBe(201); expect(response.cookies[0]!.httpOnly).toBe(true);
-    const gameId = response.json<{ gameId: string }>().gameId;
-    expect((await application.app.inject({ url: `/games/${gameId}/round`, cookies: { session: response.cookies[0]!.value } })).statusCode).toBe(200);
-  });
-  it('não revela IDs de músicas, artista, fonte, resposta ou rodadas futuras', async () => {
+  it('prepara antes da rodada, começa em 0.1s e não revela alternativas nem resposta', async () => {
     const id = await create(); const current = await round(id);
-    expect(Object.keys(current).sort()).toEqual(['deadline', 'duration', 'options', 'previewUrl', 'roundId']);
-    for (const option of current.options) expect(Object.keys(option).sort()).toEqual(['id', 'title']);
-    expect(current.previewUrl).toBe(`/games/${id}/rounds/${current.roundId}/audio`);
-    const summary = await application.app.inject({ url: `/games/${id}`, headers: headers() });
-    expect(summary.body).not.toMatch(/songId|options|audioUrl|isCorrect|appleTrackId/);
-    const again = await round(id); expect(again).toEqual(current);
-    const future = await database.db.gameRound.findUniqueOrThrow({ where: { gameId_position: { gameId: id, position: 1 } } });
-    expect((await application.app.inject({ url: `/games/${id}/rounds/${future.id}/audio`, headers: headers() })).statusCode).toBe(404);
+    expect(current).toMatchObject({ duration: 0.1, attempt: 0, revision: 0, clues: [0.1, 0.5, 2, 8, 15], guesses: [] });
+    expect(current).not.toHaveProperty('options'); expect(current).not.toHaveProperty('deadline');
+    expect(JSON.stringify(current)).not.toMatch(/songId|artistName|audioUrl|correctAnswer/);
+    expect(await round(id)).toEqual(current);
+    expect(audio.clip).toHaveBeenCalled();
     expect((await application.app.inject({ url: `/games/${id}/result`, headers: headers() })).statusCode).toBe(409);
+    const future = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id, position: 1 } });
+    expect((await application.app.inject({ url: `/games/${id}/rounds/${future.id}/audio?attempt=0&revision=0`, headers: headers() })).statusCode).toBe(409);
   });
-  it('bloqueia jogadores alheios e sessão inválida', async () => {
-    const id = await create();
-    const other = await application.app.inject({ method: 'POST', url: '/sessions' });
-    const otherToken = other.json<{ accessToken: string }>().accessToken;
-    expect((await application.app.inject({ url: `/games/${id}/round`, headers: { authorization: `Bearer ${otherToken}` } })).statusCode).toBe(404);
-    expect((await application.app.inject({ url: `/games/${id}/round`, headers: { authorization: 'Bearer invalid' } })).statusCode).toBe(401);
-    expect((await application.app.inject({ url: `/games/${id}/round` })).statusCode).toBe(401);
+  it('avança pistas na mesma música após erro e preserva histórico ao recarregar', async () => {
+    const id = await create(1); const first = await round(id);
+    const target = await database.db.gameRound.findUniqueOrThrow({ where: { id: first.roundId } });
+    const wrong = await database.db.song.findFirstOrThrow({ where: { id: { not: target.songId } } });
+    const response = await answer(id, first, wrong.id);
+    expect(response.json()).toMatchObject({ correct: false, roundFinished: false, points: 0 });
+    expect(response.json()).not.toHaveProperty('correctAnswer');
+    const next = await round(id);
+    expect(next).toMatchObject({ roundId: first.roundId, duration: 0.5, attempt: 1, guesses: [{ title: wrong.title }] });
+    expect((await answer(id, next, wrong.id)).statusCode).toBe(400);
+    expect((await answer(id, next)).json()).toMatchObject({ correct: true, roundFinished: true, points: 1000 });
   });
-  it('não aceita respostas antes do início, futuras ou com alternativa estrangeira', async () => {
-    const id = await create();
-    const rows = await database.db.gameRound.findMany({ where: { gameId: id }, orderBy: { position: 'asc' }, include: { options: true } });
-    const submit = (index: number, answerId: string) => application.app.inject({ method: 'POST', url: `/games/${id}/answer`, headers: headers(), payload: { roundId: rows[index]!.id, answerId } });
-    expect((await submit(0, rows[0]!.options[0]!.id)).statusCode).toBe(409);
-    await round(id);
-    expect((await submit(1, rows[1]!.options[0]!.id)).statusCode).toBe(409);
-    expect((await submit(0, rows[1]!.options[0]!.id)).statusCode).toBe(400);
-  });
-  it('serializa respostas concorrentes e aplica score uma única vez', async () => {
-    const id = await create(); const current = await round(id);
-    const results = await Promise.all([answer(id, current), answer(id, current)]);
-    expect(results.map(r => r.statusCode).sort()).toEqual([200, 409]);
-    expect(await database.db.playerAnswer.count({ where: { roundId: current.roundId } })).toBe(1);
-    const successful = results.find(r => r.statusCode === 200)!.json<AnswerResponse>();
-    const game = await database.db.game.findUniqueOrThrow({ where: { id } });
-    expect(game.score).toBe(successful.points); expect(game.currentRound).toBe(1);
-  });
-  it('limita áudio à rodada atual e rejeita manipulação de duração e pontuação', async () => {
-    const id = await create(); const current = await round(id);
-    const response = await application.app.inject({ url: current.previewUrl, headers: headers() });
-    expect(response.statusCode).toBe(200); expect(response.headers['cache-control']).toContain('no-store');
-    const manipulated = await application.app.inject({ method: 'POST', url: `/games/${id}/answer`, headers: headers(), payload: { roundId: current.roundId, answerId: current.options[0]!.id, duration: 1, score: 100000 } });
-    expect(manipulated.statusCode).toBe(400);
-    await answer(id, current);
-    expect((await application.app.inject({ url: current.previewUrl, headers: headers() })).statusCode).toBe(404);
-  });
-  it('zera pontos fora do prazo e permite avançar', async () => {
-    const id = await create(); const current = await round(id);
-    await database.db.gameRound.update({ where: { id: current.roundId }, data: { startedAt: new Date(Date.now() - 61000) } });
-    const response = await answer(id, current); expect(response.statusCode).toBe(200);
-    expect(response.json<AnswerResponse>()).toMatchObject({ correct: false, points: 0, streak: 0 });
-  });
-  it('executa partida completa, libera resultado e alimenta rankings', async () => {
-    const id = await create();
-    for (let i = 0; i < 10; i++) {
-      const response = await answer(id, await round(id)); expect(response.statusCode).toBe(200);
-      expect(response.json<AnswerResponse>().correctAnswer.title).toBeTruthy();
+  it('pula cinco pistas e revela somente na última, sem pontos', async () => {
+    const id = await create(1);
+    for (let index = 0; index < 5; index++) {
+      const current = await round(id);
+      expect(current.duration).toBe([0.1, 0.5, 2, 8, 15][index]);
+      const response = (await answer(id, current, null)).json<AnswerResponse>();
+      expect(response.roundFinished).toBe(index === 4);
+      expect(response.correctAnswer !== undefined).toBe(index === 4);
     }
-    const result = await application.app.inject({ url: `/games/${id}/result`, headers: headers() });
-    expect(result.json()).toMatchObject({ status: 'COMPLETED', currentRound: 10, streak: 10, correctAnswers: 10 });
-    expect(result.json<{ rounds: unknown[] }>().rounds).toHaveLength(10);
-    expect((await application.app.inject({ url: `/games/${id}/round`, headers: headers() })).statusCode).toBe(409);
-    for (const path of ['/rankings', '/rankings/daily', '/rankings/weekly', '/rankings/all-time']) {
-      const response = await application.app.inject(path);
-      expect(response.json<{ entries: unknown[] }>().entries).toHaveLength(1);
-    }
+    const result = (await application.app.inject({ url: `/games/${id}/result`, headers: headers() })).json();
+    expect(result).toMatchObject({ score: 0, correctAnswers: 0, status: 'COMPLETED' });
+    expect(await database.db.guessAttempt.count({ where: { round: { gameId: id } } })).toBe(5);
+  });
+  it('não desconta pontos pelo tempo de carregamento ou reflexão', async () => {
+    const id = await create(1); const current = await round(id);
+    await database.db.gameRound.update({ where: { id: current.roundId }, data: { startedAt: new Date(Date.now() - 120000) } });
+    expect((await answer(id, current)).json()).toMatchObject({ correct: true, points: 1200 });
+  });
+  it('serializa acertos e pulos concorrentes sem duas tentativas ou duas pontuações', async () => {
+    const id = await create(); const current = await round(id);
+    const replies = await Promise.all([answer(id, current), answer(id, current, null)]);
+    expect(replies.map(r => r.statusCode).sort()).toEqual([200, 409]);
+    expect(await database.db.guessAttempt.count({ where: { roundId: current.roundId } })).toBe(1);
+  });
+  it('protege outro jogador, rodada estrangeira e parâmetros do áudio', async () => {
+    const id = await create(); const current = await round(id); const foreign = await round(await create());
+    expect((await answer(id, foreign)).statusCode).toBe(409);
+    expect((await application.app.inject({ url: current.previewUrl })).statusCode).toBe(401);
+    const session = await application.app.inject({ method: 'POST', url: '/sessions' });
+    expect((await application.app.inject({ url: current.previewUrl, headers: { authorization: `Bearer ${session.json<{ accessToken: string }>().accessToken}` } })).statusCode).toBe(404);
+    expect((await application.app.inject({ url: current.previewUrl + '&duration=15', headers: headers() })).statusCode).toBe(400);
+    expect((await application.app.inject({ url: current.previewUrl.replace('attempt=0', 'attempt=4'), headers: headers() })).statusCode).toBe(409);
+    const clip = await application.app.inject({ url: current.previewUrl, headers: headers() });
+    expect(clip.headers['content-type']).toBe('audio/wav'); expect(clip.headers['cache-control']).toContain('no-store');
+  });
+  it('substitui fonte indisponível sem mexer no score, mantendo auditoria e bloqueando pedidos antigos', async () => {
+    const id = await create(1); const first = await round(id);
+    await answer(id, first, null); const current = await round(id);
+    await database.db.gameRound.update({ where: { id: current.roundId }, data: { audioUrl: 'https://audio-ssl.itunes.apple.com/unavailable' } });
+    const repaired = await round(id);
+    expect(repaired).toMatchObject({ attempt: 0, revision: 1, duration: 0.1, guesses: [], replaced: true });
+    expect((await answer(id, current)).statusCode).toBe(409);
+    expect(await database.db.guessAttempt.count({ where: { roundId: current.roundId, revision: 0 } })).toBe(1);
+    expect((await database.db.game.findUniqueOrThrow({ where: { id } })).score).toBe(0);
+  });
+  it('não consome tentativa nem bloqueia catálogo numa falha temporária de rede', async () => {
+    const id = await create(1);
+    const target = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id } });
+    await database.db.gameRound.update({ where: { id: target.id }, data: { audioUrl: 'https://audio-ssl.itunes.apple.com/outage' } });
+    expect((await application.app.inject({ url: `/games/${id}/round`, headers: headers() })).statusCode).toBe(502);
+    expect(await database.db.guessAttempt.count({ where: { roundId: target.id } })).toBe(0);
+    expect((await database.db.song.findUniqueOrThrow({ where: { id: target.songId } })).audioUnavailableUntil).toBeNull();
+  });
+  it('preserva histórico antigo e exclui suas regras do ranking novo', async () => {
+    const id = await create(1); await database.db.game.update({ where: { id }, data: { rulesVersion: 1 } });
+    expect((await application.app.inject({ url: `/games/${id}/round`, headers: headers() })).statusCode).toBe(410);
+    expect((await application.app.inject({ url: `/games/${id}`, headers: headers() })).json()).toMatchObject({ status: 'EXPIRED' });
+  });
+  it('conclui dez músicas e publica o resultado nas três janelas de ranking', async () => {
+    const id = await create();
+    for (let i = 0; i < 10; i++) expect((await answer(id, await round(id))).json()).toMatchObject({ correct: true, roundFinished: true });
+    const result = (await application.app.inject({ url: `/games/${id}/result`, headers: headers() })).json();
+    expect(result).toMatchObject({ status: 'COMPLETED', correctAnswers: 10, maxStreak: 10 });
+    expect(result.rounds).toHaveLength(10);
+    for (const period of ['daily', 'weekly', 'all-time'])
+      expect((await application.app.inject('/rankings/' + period)).json<{ entries: unknown[] }>().entries).toHaveLength(1);
   });
   it('protege admin e aceita cadastro configurável', async () => {
     expect((await application.app.inject('/admin/artists')).statusCode).toBe(401);
@@ -162,14 +181,6 @@ describe('API + migrations + PostgreSQL real', () => {
     expect(await database.db.song.findUnique({ where: { id: stored.id } })).toMatchObject({ popularityWeight: 3, originalYear: 1980 });
     await repository.ingest(artist, { ...base, trackId: 999002, trackName: 'Obra', previewUrl: undefined });
     expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).active).toBe(false);
-  });
-  it('não aceita roundId de outra partida e mantém início único em GET concorrente', async () => {
-    const first = await create(); const second = await create();
-    const rounds = await Promise.all([round(first), round(first)]);
-    expect(rounds[0]).toEqual(rounds[1]);
-    const foreign = await round(second);
-    const response = await application.app.inject({ method: 'POST', url: `/games/${first}/answer`, headers: headers(), payload: { roundId: foreign.roundId, answerId: foreign.options[0]!.id } });
-    expect(response.statusCode).toBe(409);
   });
   it('não altera disponibilidade, prioridade ou aliases em PATCH parcial', async () => {
     const artist = await database.db.artist.create({ data: { name: 'Editor', normalizedName: 'editor', categoryId: 'group1', aliases: ['Apelido'], active: false, catalogPriority: 7 } });
