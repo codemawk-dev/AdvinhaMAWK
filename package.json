@@ -4,9 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "dev": "concurrently -k -n api,web \"npm --prefix backend run dev\" \"vite\"",
+    "dev:web": "vite",
+    "build": "npm run build:web && npm --prefix backend run build",
+    "build:web": "tsc -b && vite build",
+    "lint": "oxlint src && npm --prefix backend run lint",
+    "typecheck": "tsc -b && npm --prefix backend run typecheck",
+    "test": "npm --prefix backend test",
+    "postinstall": "npm --prefix backend ci",
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "catalog:sync": "npm --prefix backend run catalog:sync --",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,6 +24,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

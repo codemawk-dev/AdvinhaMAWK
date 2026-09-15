@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  displayName String   @default("Jogador")
+  createdAt   DateTime @default(now())
+  games       Game[]
+}
+
+model InternalCategory {
+  id      String   @id
+  name    String
+  artists Artist[]
+}
+
+model Artist {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  normalizedName  String   @unique
+  aliases         String[] @default([])
+  appleArtistId   String?  @unique
+  categoryId      String
+  category        InternalCategory @relation(fields: [categoryId], references: [id])
+  active          Boolean  @default(true)
+  catalogPriority Int      @default(1)
+  lastSyncedAt    DateTime?
+  nextSyncAt      DateTime @default(now())
+  syncError       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  songs           Song[]
+
+  @@index([active, nextSyncAt])
+}
+
+model Song {
+  id               String   @id @default(uuid()) @db.Uuid
+  appleTrackId     String   @unique
+  title            String
+  normalizedTitle  String
+  artistId         String   @db.Uuid
+  artist           Artist   @relation(fields: [artistId], references: [id])
+  album            String?
+  previewUrl       String
+  coverUrl         String?
+  appleMusicUrl    String?
+  genre            String?
+  releaseDate      DateTime?
+  originalYear     Int?
+  popularityWeight Float    @default(1)
+  difficultyWeight Float    @default(1)
+  versionRank      Int      @default(0)
+  active           Boolean  @default(true)
+  lastSeenAt       DateTime @default(now())
+  lastVerifiedAt   DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  rounds           GameRound[]
+
+  @@unique([artistId, normalizedTitle])
+  @@index([active, artistId])
+  @@index([lastVerifiedAt])
+}
+
+enum GameStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+model Game {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  user         User     @relation(fields: [userId], references: [id])
+  status       GameStatus @default(ACTIVE)
+  totalRounds  Int
+  currentRound Int      @default(0)
+  score        Int      @default(0)
+  streak       Int      @default(0)
+  maxStreak    Int      @default(0)
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  completedAt  DateTime?
+  rounds       GameRound[]
+
+  @@index([userId, createdAt])
+  @@index([status, totalRounds, completedAt, score])
+}
+
+model GameRound {
+  id               String   @id @default(uuid()) @db.Uuid
+  gameId           String   @db.Uuid
+  game             Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  position         Int
+  songId           String   @db.Uuid
+  song             Song     @relation(fields: [songId], references: [id])
+  duration         Int
+  difficultyWeight Float
+  // Immutable snapshots keep ongoing games stable when the catalogue changes.
+  audioUrl         String
+  title            String
+  artistName       String
+  coverUrl         String?
+  appleMusicUrl    String?
+  startedAt        DateTime?
+  answeredAt       DateTime?
+  options          RoundOption[]
+  answer           PlayerAnswer?
+
+  @@unique([gameId, position])
+  @@index([songId])
+}
+
+model RoundOption {
+  id        String   @id @default(uuid()) @db.Uuid
+  roundId   String   @db.Uuid
+  round     GameRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  title     String
+  position  Int
+  isCorrect Boolean
+  answers   PlayerAnswer[]
+
+  @@unique([roundId, position])
+  @@unique([roundId, id])
+}
+
+model PlayerAnswer {
+  id         String   @id @default(uuid()) @db.Uuid
+  roundId    String   @unique @db.Uuid
+  round      GameRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  optionId   String?   @db.Uuid
+  option     RoundOption? @relation(fields: [roundId, optionId], references: [roundId, id])
+  correct    Boolean
+  points     Int
+  responseMs Int
+  createdAt  DateTime @default(now())
+}
+
+model CatalogLease {
+  id        String   @id
+  owner     String
+  expiresAt DateTime
+}

@@ -1,0 +1,27 @@
+import { parseArgs } from 'node:util';
+import { z } from 'zod';
+import { buildApp } from '../app.js';
+import { readConfig } from '../core/config.js';
+import { seedArtists } from './seed.js';
+import { syncToMinimum } from './import.js';
+const config = readConfig();
+const { values } = parseArgs({ options: { all: { type: 'boolean' }, batch: { type: 'boolean' }, 'min-songs': { type: 'string' } }, strict: true });
+if ([values.all, values.batch, values['min-songs'] !== undefined].filter(Boolean).length > 1) throw new Error('Use apenas --all, --batch ou --min-songs N.');
+const minimum = z.coerce.number().int().min(1).max(100000).parse(values['min-songs'] ?? config.CATALOG_MIN_SONGS);
+const { app, db, catalog } = await buildApp(config);
+try {
+  await seedArtists(db);
+  if (values.all || values.batch) {
+    do {
+      const result = await catalog.syncBatch();
+      console.log(JSON.stringify(result));
+      if (result.busy || !result.artists || !values.all) break;
+    } while (values.all);
+  } else {
+    await syncToMinimum({ syncBatch: () => catalog.syncBatch(), countPlayable: () => db.song.count({ where: { active: true, artist: { active: true } } }) },
+      minimum, progress => console.log(JSON.stringify({ event: 'catalog.progress', ...progress })));
+  }
+} catch (error) {
+  app.log.error({ err: error }, 'catalog.import.failed');
+  process.exitCode = 1;
+} finally { await app.close(); }
