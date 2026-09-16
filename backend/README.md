@@ -88,7 +88,7 @@ RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas
 
 `npm run test:stack` valida uma partida completa pelo proxy local em 127.0.0.1:5173, busca no catálogo e as cinco durações de áudio. `npm run test:live` importa dados externos em banco temporário. Ambos dependem da disponibilidade externa.
 
-Verificação de 15/09/2026: 62 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido e transferido ao Supabase: 22.362 músicas, 225 artistas com músicas importadas, 304 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 22.362 fontes. Containers ainda precisam de validação em ambiente com Docker.
+Verificação de 16/09/2026: 65 testes automatizados aprovados; partida real com preferências concluída na validação; 225 fontes de áudio verificadas com sucesso usando a seleção de passagem audível. Catálogo local: 24.649 músicas, 260 artistas com músicas importadas, 304 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 24.649 fontes. Containers ainda precisam de validação em ambiente com Docker.
 
 Os previews são fornecidos por terceiros. A implementação técnica não concede direitos de uso ou licença de distribuição; mantenha a avaliação de licenciamento do provedor antes da publicação comercial.
 
