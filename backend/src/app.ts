@@ -1,3 +1,4 @@
+import { filterSongs, preferencesSchema } from './games/preferences.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
@@ -56,6 +57,11 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   app.get('/health', async (_request, reply) => {
     try { await db.$queryRaw`SELECT 1`; return { status: 'ok', database: 'up' }; }
     catch { return reply.code(503).send({ status: 'unhealthy', database: 'down' }); }
+  });
+  app.post('/catalog/matching', async request => {
+    const preferences = preferencesSchema.parse(request.body);
+    const matches = filterSongs(await songs.playable(), preferences);
+    return { songs: matches.length, titles: new Set(matches.map(song => song.normalizedTitle)).size, artists: new Set(matches.map(song => song.artistId)).size };
   });
   app.get('/catalog/summary', async () => {
     const [songs, artists, groups] = await Promise.all([

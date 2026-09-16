@@ -55,6 +55,12 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     expect((await application.app.inject({ url: '/sessions/me', headers: headers() })).json()).toMatchObject({ displayName: 'Teste' });
     expect((await application.app.inject('/catalog/summary')).json()).toEqual({ songs: 45, artists: 45, groups: 9 });
   });
+  it('conta músicas compatíveis sem expor títulos ou respostas', async () => {
+    const response = await application.app.inject({ method: 'POST', url: '/catalog/matching', payload: { yearFrom: 2020, yearTo: 2020 } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ songs: 7, titles: 7, artists: 7 });
+    expect((await application.app.inject({ method: 'POST', url: '/catalog/matching', payload: { yearFrom: 2025, yearTo: 2000 } })).statusCode).toBe(400);
+  });
   it('busca títulos e artistas sem acento, limitada e sem resposta/URL', async () => {
     for (const q of ['Canção 44', 'cancao 44', 'artista 44']) {
       const response = await application.app.inject('/catalog/search?q=' + encodeURIComponent(q));

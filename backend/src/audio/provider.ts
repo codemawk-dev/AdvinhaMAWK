@@ -1,3 +1,4 @@
+import { audiblePassage } from './passage.js';
 import { spawn } from 'node:child_process';
 import ffmpegStatic from 'ffmpeg-static';
 import { AppError } from '../core/errors.js';
@@ -89,7 +90,7 @@ export class ApplePreviewProvider implements AudioProvider {
     return new Promise<Buffer>((resolve, reject) => {
       const child = spawn(this.binary, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
         '-af', 'silenceremove=start_periods=1:start_duration=0.005:start_threshold=-55dB,asetpts=N/SR/TB',
-        '-t', '15', '-vn', '-map_metadata', '-1', '-ac', '1', '-ar', String(RATE), '-f', 's16le', 'pipe:1'],
+        '-t', '30', '-vn', '-map_metadata', '-1', '-ac', '1', '-ar', String(RATE), '-f', 's16le', 'pipe:1'],
       { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
       const chunks: Buffer[] = []; let size = 0; let failed = false;
       const timer = setTimeout(() => { failed = true; child.kill(); }, 10000);
@@ -98,12 +99,14 @@ export class ApplePreviewProvider implements AudioProvider {
       child.once('error', () => { clearTimeout(timer); reject(new AudioSourceError(false)); });
       child.stdout.on('data', (chunk: Buffer) => {
         size += chunk.length;
-        if (size > MAX_PCM + RATE * 2) { failed = true; child.kill(); } else chunks.push(chunk);
+        if (size > RATE * 2 * 31) { failed = true; child.kill(); } else chunks.push(chunk);
       });
       child.once('close', code => {
         clearTimeout(timer);
         if (failed || code !== 0 || size < MAX_PCM) { reject(new AudioSourceError(!failed)); return; }
-        resolve(Buffer.concat(chunks).subarray(0, MAX_PCM));
+        const passage = audiblePassage(Buffer.concat(chunks));
+        if (!passage) { reject(new AudioSourceError(true)); return; }
+        resolve(passage);
       });
       child.stdin.end(input);
     });

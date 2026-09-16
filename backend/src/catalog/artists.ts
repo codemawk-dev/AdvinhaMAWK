@@ -15,6 +15,12 @@ artistGroups.mpb!.artists.push('Tom Jobim', 'Vinicius de Moraes', 'João Gilbert
 artistGroups.pagode_samba!.artists.push('Nelson Cavaquinho', 'Adoniran Barbosa', 'Noel Rosa', 'Nelson Sargento', 'Wilson Moreira', 'Bezerra da Silva', 'Dudu Nobre', 'Diogo Nogueira', 'Teresa Cristina', 'Leci Brandão');
 artistGroups.rock!.artists.push('Biquini Cavadão', 'Nenhum de Nós', 'Ira!', 'Kid Abelha', 'Pato Fu', '14 Bis', 'Camisa de Vênus', 'Tihuana', 'Dead Fish', 'Moptop');
 artistGroups.pop!.artists.push('Sandy', 'Wanessa Camargo', 'Lexa', 'Kell Smith', 'Vitão', 'Duda Beat', 'ANAVITÓRIA', 'Clarice Falcão', 'Tiê', 'Roberta Campos');
+artistGroups.pop!.artists.push('Carol Biazin', 'Jovem Dionisio', 'Lagum', 'Gilsons', 'Rubel', 'Liniker', 'Rachel Reis');
+artistGroups.trap_rap!.artists.push('Baco Exu do Blues', 'Yunk Vino', 'Froid', 'Sant', 'Sidoka', 'Derek', 'Duquesa', 'Tasha & Tracie');
+artistGroups.sertanejo!.artists.push('Yasmin Santos', 'Léo & Raphael', 'Diego & Victor Hugo', 'Ícaro & Gilmar', 'João Carreiro');
+artistGroups.forro!.artists.push('Iguinho e Lulinha', 'Vitor Fernandes', 'Eric Land', 'Raí Saia Rodada');
+artistGroups.funk!.artists.push('MC Davi', 'MC Menor JP', 'MC Tuto', 'MC Paiva', 'MC Pipokinha', 'MC Dricka', 'MC Zaac', 'MC Fioti', 'MC WM', 'MC Kekel');
+artistGroups.pagode_samba!.artists.push('Grupo Vou pro Sereno', 'Grupo Clareou', 'Grupo Kamisa 10', 'Di Propósito', 'Vitinho', 'Suél', 'Tiee', 'Chininha', 'Grupo Bom Gosto');
 export const artistAliases: Record<string, string[]> = {
   'Tom Jobim': ['Antônio Carlos Jobim', 'Antonio Carlos Jobim'],
   'Rio Negro & Solimões': ['Rionegro & Solimões'],

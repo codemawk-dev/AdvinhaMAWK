@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Flame, Pause, Play, Search, SkipForward, X } from 'lucide-react';
+import { Flame, Pause, Play, Search, SkipForward, X, LoaderCircle, Send, Headphones } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { ErrorNotice } from '../components/GameShell';
 import { api, audioPath, type GameSummary, type Round, type SongSuggestion } from '../lib/api';
@@ -55,9 +55,9 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
     {round.replaced && <p role="status" className="recovery-notice">Trocamos um áudio indisponível. Você continua com todas as pistas desta música, sem perder pontos.</p>}
     <div className="audio-stage">
       <button className={`record-button ${playing ? 'is-playing' : ''}`} onClick={() => void play()} disabled={busy || !ready} aria-label={playing ? 'Pausar trecho' : ready ? 'Ouvir trecho' : 'Preparando áudio'}>
-        <span>{playing ? <Pause fill="currentColor" size={30} /> : <Play fill="currentColor" size={30} />}</span>
+        <span>{!ready ? <LoaderCircle className="loading-icon" size={30} aria-hidden="true" /> : playing ? <Pause fill="currentColor" size={30} /> : <Play fill="currentColor" size={30} />}</span>
       </button>
-      <AudioVisualizer isPlaying={playing} />
+      <AudioVisualizer isPlaying={playing} /><span className="player-instruction"><Headphones size={14} aria-hidden="true" />{playing ? 'Ouvindo…' : ready ? 'Toque para ouvir ou repetir' : 'Preparando um trecho audível'}</span>
       <span className="clip-label">{audioError ? 'Vamos recuperar seu áudio' : !ready ? 'Preparando trecho…' : `${seconds(round.duration)} segundos liberados`}</span>
       <audio ref={player} src={audioPath(round.previewUrl)} preload="auto"
         onCanPlay={() => { setReady(true); setAudioError(''); }}
@@ -106,7 +106,7 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
             <strong>{song.title}</strong><span>{song.artist}</span>
           </li>)}</ul>
       </div>}
-      <button className="primary-button" type="submit" disabled={!selected || !ready || busy}>{busy ? 'Conferindo…' : 'Enviar palpite'}</button>
+      <button className="primary-button" type="submit" disabled={!selected || !ready || busy}>{busy ? <LoaderCircle className="loading-icon" size={18} aria-hidden="true" /> : <Send size={18} aria-hidden="true" />}{busy ? 'Conferindo…' : 'Enviar palpite'}</button>
     </form>
     <p className="clue-help">Reconheceu? Busque pelo título ou artista e envie seu palpite.</p>
   </div>;

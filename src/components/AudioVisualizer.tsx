@@ -11,10 +11,10 @@ export function AudioVisualizer({
   barCount = 15,
   variant = 'primary',
 }: AudioVisualizerProps) {
-  const activeCount = isPlaying ? 5 : 0;
+  const activeCount = isPlaying ? barCount : 0;
 
   return (
-    <div className="flex items-center justify-center h-7 gap-1">
+    <div aria-hidden="true" className="audio-bars flex items-center justify-center h-7 gap-1">
       {BAR_HEIGHTS.slice(0, barCount).map((height, i) => {
         const isActive = i < activeCount;
         return (

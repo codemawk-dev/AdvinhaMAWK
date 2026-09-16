@@ -185,3 +185,21 @@ button:focus-visible,input:focus-visible,a:focus-visible { outline: 2px solid va
 .year-fields { display: flex; gap: 12px; margin-top: 16px; }
 .year-fields label { flex: 1; min-width: 0; font-size: 13px; }
 .year-fields input { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; background: #161a21; border: 1px solid #454c59; border-radius: 8px; color: white; }
+
+.player-instruction { display: flex; gap: 7px; align-items: center; color: #b8c8d9; font-size: 12px; }
+.music-preferences legend, .genre-options span { display: inline-flex; align-items: center; gap: 7px; }
+.matching-catalog { display: flex; align-items: center; gap: 9px; border-radius: 10px; padding: 12px; background: #12333a; color: #bdf3fa; font-size: 13px; line-height: 1.5; }
+.matching-catalog svg { flex-shrink: 0; }
+.genre-options label { transition: background .2s, border-color .2s, transform .2s; }
+.genre-options label:hover { transform: translateY(-2px); border-color: #67e8f9; }
+button:active:not(:disabled) { transform: scale(.97); }
+button:focus-visible, .genre-options label:focus-within { outline: 2px solid #67e8f9; outline-offset: 3px; }
+.loading-icon { animation: loading-turn 1s linear infinite; }
+.screen { animation: screen-arrive .25s ease-out; }
+.clue-timeline span { transition: width .18s linear; }
+.record-button.is-playing { box-shadow: 0 0 0 9px #ff385c18, 0 0 38px #ff385c55; }
+@keyframes loading-turn { to { transform: rotate(360deg); } }
+@keyframes screen-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+.year-fields label > svg { display: inline-block; vertical-align: -2px; margin-right: 4px; }

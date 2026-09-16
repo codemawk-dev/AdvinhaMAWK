@@ -52,6 +52,7 @@ export const api = {
   search: (query: string) => request<{ songs: SongSuggestion[] }>(`/catalog/search?q=${encodeURIComponent(query)}`),
   result: (id: string) => request<Result>(`/games/${id}/result`),
   ranking: (period: RankingPeriod) => request<Ranking>(`/rankings/${period}`),
+  matching: (preferences: MusicPreferences) => request<{ songs: number; titles: number; artists: number }>('/catalog/matching', preferences),
   catalog: () => request<{ songs: number; artists: number; groups: number }>('/catalog/summary'),
 };
 export function audioPath(source: string): string {

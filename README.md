@@ -2,7 +2,7 @@
 
 Jogo brasileiro de adivinhar músicas, com frontend React 19 e backend Fastify, Prisma e PostgreSQL. O jogador digita o título ou artista, seleciona uma sugestão do catálogo e envia seu palpite. Cada uma das 10 músicas oferece cinco pistas de áudio: **0,1 → 0,5 → 2 → 8 → 15 segundos**.
 
-Antes da partida, selecione estilos musicais e intervalo de anos. O padrão da interface é de 2015 até o ano atual. O sorteio respeita esses filtros e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém 261 artistas configurados e a importação busca atingir pelo menos 20.000 músicas ativas com preview.
+Antes da partida, selecione estilos musicais e intervalo de anos. O padrão da interface é de 2015 até o ano atual. O sorteio respeita esses filtros e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém 304 artistas configurados e a importação busca atingir pelo menos 20.000 músicas ativas com preview.
 
 ## Desenvolvimento
 

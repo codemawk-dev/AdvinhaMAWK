@@ -51,7 +51,7 @@ Transações bloqueiam a partida antes de registrar palpites. Pedidos duplicados
 
 ## Áudio e disponibilidade
 
-O servidor verifica e prepara 15 segundos antes de abrir a rodada. Remove silêncio inicial, ajusta os timestamps e entrega WAV mono sem metadados, com a duração exata da pista. Não envia ao cliente a URL original ou o áudio das próximas pistas.
+O servidor verifica e prepara 15 segundos antes de abrir a rodada. Decodifica até 30 segundos, remove silêncio inicial e seleciona uma janela estável de 15 segundos por energia e continuidade. O começo precisa ter som e pelo menos 80% da janela precisa superar o limiar de audibilidade. Ajusta o volume com limite de pico e ganho máximo de 4x, entregando WAV mono sem metadados. Isso não identifica automaticamente refrões ou voz. Não envia ao cliente a URL original ou o áudio das próximas pistas.
 
 Um cache de memória limitado a 32 MB, com validade de 15 minutos, compartilha o preparo entre pedidos da mesma fonte. Não há armazenamento persistente de áudio. Downloads têm limites de tamanho, prazo, concorrência e redirecionamento para domínios Apple autorizados.
 
@@ -61,7 +61,7 @@ Falhas permanentes colocam a música em quarentena por 24 horas e provocam subst
 
 ## Catálogo e administração
 
-O seed cadastra 261 artistas em nove grupos editoriais. `npm run catalog:sync` importa até atingir 20.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--batch` limita a um lote; `--min-songs 20000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
+O seed cadastra 304 artistas em nove grupos editoriais. `npm run catalog:sync` importa até atingir 20.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--batch` limita a um lote; `--min-songs 20000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
 
 O scheduler usa lease no banco para evitar importações concorrentes. `SCHEDULER_ENABLED=false` desativa a execução automática. Pesquisas de palpites usam o PostgreSQL; não fazem pesquisa externa durante a partida.
 
@@ -88,8 +88,10 @@ RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas
 
 `npm run test:stack` valida uma partida completa pelo proxy local em 127.0.0.1:5173, busca no catálogo e as cinco durações de áudio. `npm run test:live` importa dados externos em banco temporário. Ambos dependem da disponibilidade externa.
 
-Verificação de 15/09/2026: 62 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido e transferido ao Supabase: 22.362 músicas, 225 artistas com músicas importadas, 261 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 22.362 fontes. Containers ainda precisam de validação em ambiente com Docker.
+Verificação de 15/09/2026: 62 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido e transferido ao Supabase: 22.362 músicas, 225 artistas com músicas importadas, 304 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 22.362 fontes. Containers ainda precisam de validação em ambiente com Docker.
 
 Os previews são fornecidos por terceiros. A implementação técnica não concede direitos de uso ou licença de distribuição; mantenha a avaliação de licenciamento do provedor antes da publicação comercial.
 
 Preferências: POST /games aceita preferences com genres (IDs dos grupos), yearFrom e yearTo (ano ou null). O servidor persiste e respeita os filtros inclusive nas trocas de áudio. Usa originalYear quando disponível, senão o ano de releaseDate, que pode ser uma reedição. O ano é revelado após a rodada e no resultado. A migração music_preferences adiciona preferences e releaseYear; o bootstrap agora contém cinco migrations.
+
+POST /catalog/matching recebe as mesmas preferências da partida e retorna contagens de músicas, títulos distintos e artistas compatíveis, sem revelar respostas. A interface bloqueia o início quando há menos de dez títulos e orienta ampliar a seleção. As animações respeitam prefers-reduced-motion.
