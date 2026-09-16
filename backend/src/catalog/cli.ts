@@ -5,13 +5,15 @@ import { readConfig } from '../core/config.js';
 import { seedArtists } from './seed.js';
 import { syncToMinimum } from './import.js';
 const config = readConfig();
-const { values } = parseArgs({ options: { all: { type: 'boolean' }, batch: { type: 'boolean' }, 'min-songs': { type: 'string' } }, strict: true });
-if ([values.all, values.batch, values['min-songs'] !== undefined].filter(Boolean).length > 1) throw new Error('Use apenas --all, --batch ou --min-songs N.');
+const { values } = parseArgs({ options: { expand: { type: 'boolean' }, all: { type: 'boolean' }, batch: { type: 'boolean' }, 'min-songs': { type: 'string' } }, strict: true });
+if ([values.expand, values.all, values.batch, values['min-songs'] !== undefined].filter(Boolean).length > 1) throw new Error('Use apenas --expand, --all, --batch ou --min-songs N.');
 const minimum = z.coerce.number().int().min(1).max(100000).parse(values['min-songs'] ?? config.CATALOG_MIN_SONGS);
 const { app, db, catalog } = await buildApp(config);
 try {
   await seedArtists(db);
-  if (values.all || values.batch) {
+  if (values.expand) {
+    console.log(JSON.stringify(await catalog.expandKnownArtists()));
+  } else if (values.all || values.batch) {
     do {
       const result = await catalog.syncBatch();
       console.log(JSON.stringify(result));

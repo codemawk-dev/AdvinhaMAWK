@@ -1,3 +1,4 @@
+import type { MusicPreferences } from '../games/preferences.js';
 import type { Artist, PrismaClient } from '@prisma/client';
 import { editorialWeights } from './curation.js';
 import { normalizeName, normalizeTitle, versionRank } from './normalization.js';
@@ -37,8 +38,16 @@ export class ArtistRepository {
 }
 export class SongRepository {
   constructor(private db: PrismaClient) {}
-  playable() {
-    return this.db.song.findMany({ where: { active: true, artist: { active: true }, OR: [{ audioUnavailableUntil: null }, { audioUnavailableUntil: { lte: new Date() } }] }, include: { artist: true } });
+  playable(preferences?: MusicPreferences) {
+    const from = preferences?.yearFrom ?? null; const to = preferences?.yearTo ?? null;
+    const years = from !== null || to !== null ? [{ OR: [
+      { originalYear: { ...(from !== null ? { gte: from } : {}), ...(to !== null ? { lte: to } : {}) } },
+      { originalYear: null, releaseDate: { ...(from !== null ? { gte: new Date(Date.UTC(from, 0, 1)) } : {}), ...(to !== null ? { lt: new Date(Date.UTC(to + 1, 0, 1)) } : {}) } },
+    ] }] : [];
+    return this.db.song.findMany({ where: { active: true,
+      artist: { active: true, ...(preferences?.genres.length ? { categoryId: { in: preferences.genres } } : {}) },
+      AND: [...years, { OR: [{ audioUnavailableUntil: null }, { audioUnavailableUntil: { lte: new Date() } }] }],
+    }, include: { artist: true } });
   }
   async ingest(artist: Artist, track: AppleTrack): Promise<boolean> {
     if (!track.previewUrl || !isAppleAudioUrl(track.previewUrl)) {

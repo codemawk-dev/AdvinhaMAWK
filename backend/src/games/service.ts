@@ -19,7 +19,7 @@ export class GameService {
   constructor(private games: GameRepository, private songs: SongRepository, private audioProvider: AudioProvider,
     private selection = new GameSelectionService()) {}
   async create(userId: string, rounds: number, preferences: MusicPreferences = preferencesSchema.parse({})) {
-    const [pool, recent] = await Promise.all([this.songs.playable(), this.games.recent(userId)]);
+    const [pool, recent] = await Promise.all([this.songs.playable(preferences), this.games.recent(userId)]);
     const selected = this.selection.select(filterSongs(pool, preferences), rounds, recent);
     const game = await this.games.create({ user: { connect: { id: userId } }, totalRounds: rounds, rulesVersion: 2, preferences,
       expiresAt: new Date(Date.now() + 24 * 3600000), rounds: { create: selected.map((song, position) => ({
@@ -43,7 +43,8 @@ export class GameService {
     });
   }
   private async replace(gameId: string, userId: string, failed: GameRound) {
-    const pool = await this.songs.playable();
+    const summary = await this.games.summary(gameId, userId);
+    const pool = await this.songs.playable(summary.preferences);
     const available = await this.games.transaction(gameId, userId, async tx => {
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } }); this.assertActive(game);
       const current = await tx.gameRound.findUniqueOrThrow({ where: { id: failed.id } });

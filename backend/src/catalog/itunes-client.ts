@@ -12,6 +12,7 @@ export type AppleTrack = z.infer<typeof trackSchema>;
 export interface MusicSearchClient {
   searchArtist(name: string): Promise<AppleTrack[]>;
   lookupTracks(ids: string[]): Promise<AppleTrack[]>;
+  lookupArtistSongs?(ids: string[], recent: boolean): Promise<AppleTrack[]>;
 }
 export function isAppleAudioUrl(value: string): boolean {
   try {
@@ -30,6 +31,10 @@ export class ITunesClient implements MusicSearchClient {
   lookupTracks(ids: string[]): Promise<AppleTrack[]> {
     if (!ids.length || ids.length > 50 || ids.some(id => !/^\d+$/.test(id))) throw new Error('Invalid lookup batch');
     return this.request('/lookup', { id: ids.join(',') });
+  }
+  lookupArtistSongs(ids: string[], recent: boolean): Promise<AppleTrack[]> {
+    if (!ids.length || ids.length > 10 || ids.some(id => !/^\d+$/.test(id))) throw new Error('Invalid artist lookup batch');
+    return this.request('/lookup', { id: ids.join(','), limit: '200', ...(recent ? { sort: 'recent' } : {}) });
   }
   private request(path: string, params: Record<string, string>): Promise<AppleTrack[]> {
     const result = this.queue.then(() => this.perform(path, params));

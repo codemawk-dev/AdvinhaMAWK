@@ -70,6 +70,40 @@ export class CatalogService {
       finally { this.running = false; }
     }
   }
+  async expandKnownArtists() {
+    if (this.running || !this.apple.lookupArtistSongs) throw new AppError(409, 'SYNC_UNAVAILABLE', 'Expansão indisponível agora.');
+    this.running = true;
+    let locked = false;
+    let imported = 0; let failed = 0;
+    try {
+      locked = await this.acquire();
+      if (!locked) throw new AppError(409, 'SYNC_BUSY', 'Outra importação está em andamento.');
+      const artists = await this.db.artist.findMany({ where: { active: true, appleArtistId: { not: null } }, orderBy: { id: 'asc' } });
+      for (let offset = 0; offset < artists.length; offset += 10) {
+        const batch = artists.slice(offset, offset + 10);
+        const byIdentity = new Map(batch.map(artist => [artist.appleArtistId!, artist]));
+        for (const recent of [false, true]) {
+          await this.renew();
+          try {
+            const tracks = await this.apple.lookupArtistSongs([...byIdentity.keys()], recent);
+            for (const track of tracks) {
+              const artist = byIdentity.get(String(track.artistId));
+              // Lookup may include collaborators and unrelated entries; only verified IDs belong here.
+              if (artist && await this.songs.ingest(artist, track)) imported++;
+            }
+          } catch (error) {
+            failed++;
+            this.logger.error({ err: error, offset, recent }, 'catalog.expansion.failed');
+          }
+        }
+        this.logger.info({ checked: Math.min(offset + 10, artists.length), total: artists.length, imported, failed }, 'catalog.expansion.progress');
+      }
+      return { artists: artists.length, imported, failed };
+    } finally {
+      try { if (locked) await this.db.catalogLease.deleteMany({ where: { id: 'catalog', owner: this.owner } }); }
+      finally { this.running = false; }
+    }
+  }
   async status() {
     const [artists, songs, activeSongs, dueArtists, errors, lease] = await Promise.all([
       this.db.artist.count(), this.db.song.count(), this.db.song.count({ where: { active: true } }),

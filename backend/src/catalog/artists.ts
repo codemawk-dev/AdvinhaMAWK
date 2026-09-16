@@ -1,3 +1,5 @@
+import { expandedArtists } from './expanded-artists.js';
+import { normalizeName } from './normalization.js';
 // One administrative primary group per artist; aliases are for identity matching only.
 export const artistGroups: Record<string, { name: string; artists: string[] }> = {
   sertanejo: { name: 'Sertanejo', artists: ['Jorge & Mateus', 'Henrique & Juliano', 'Gusttavo Lima', 'Zé Neto & Cristiano', 'Maiara & Maraisa', 'Marília Mendonça', 'Luan Santana', 'Matheus & Kauan', 'Simone Mendes', 'Ana Castela', 'Murilo Huff', 'Lauana Prado', 'Bruno & Marrone', 'Chitãozinho & Xororó', 'Zezé Di Camargo & Luciano', 'Leonardo', 'Daniel', 'Fernando & Sorocaba', 'Hugo & Guilherme', 'Guilherme & Benuto', 'Israel & Rodolffo', 'Clayton & Romário', 'Leandro & Leonardo', 'Milionário & José Rico', 'Sérgio Reis', 'Almir Sater', 'Tião Carreiro & Pardinho', 'Roberta Miranda', 'Paula Fernandes'] },
@@ -23,6 +25,14 @@ artistGroups.funk!.artists.push('MC Davi', 'MC Menor JP', 'MC Tuto', 'MC Paiva',
 artistGroups.pagode_samba!.artists.push('Grupo Vou pro Sereno', 'Grupo Clareou', 'Grupo Kamisa 10', 'Di Propósito', 'Vitinho', 'Suél', 'Tiee', 'Chininha', 'Grupo Bom Gosto');
 // Curated pagodão / paredão category; existing axé artists keep their primary group.
 artistGroups.paredao_baiano = { name: 'Paredão baiano', artists: ['Oh Polêmico', 'O Kannalha', 'La Fúria', 'Escandurras', 'Robyssão', 'Igor Kannário', 'A Dama', 'O Poeta', 'Oh Maestro', 'Os Africanos'] };
+// Keep the original primary category and avoid alias/accidental duplicates.
+const configuredNames = new Set(Object.values(artistGroups).flatMap(group => group.artists).map(normalizeName));
+for (const [category, names] of Object.entries(expandedArtists)) {
+  for (const name of names) {
+    const key = normalizeName(name);
+    if (!configuredNames.has(key)) { artistGroups[category]!.artists.push(name); configuredNames.add(key); }
+  }
+}
 export const artistAliases: Record<string, string[]> = {
   'O Kannalha': ['O Kanalha'],
   'La Fúria': ['Lá Fúria'],

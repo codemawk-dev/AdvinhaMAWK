@@ -1,3 +1,4 @@
+import { filterSongs, preferencesSchema } from '../src/games/preferences.js';
 import { transferCatalog } from '../src/catalog/transfer.js';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -60,6 +61,15 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ songs: 7, titles: 7, artists: 7 });
     expect((await application.app.inject({ method: 'POST', url: '/catalog/matching', payload: { yearFrom: 2025, yearTo: 2000 } })).statusCode).toBe(400);
+  });
+  it('consulta filtrada no banco coincide com seleção por ano original, edição e categoria', async () => {
+    const repo = new SongRepository(database.db);
+    const pool = await repo.playable();
+    for (const input of [{}, { yearFrom: 2020 }, { yearTo: 2020 }, { yearFrom: 2020, yearTo: 2020 }, { genres: ['pop'], yearFrom: 2020 }]) {
+      const preferences = preferencesSchema.parse(input);
+      const actual = await repo.playable(preferences);
+      expect(actual.map(song => song.id).sort()).toEqual(filterSongs(pool, preferences).map(song => song.id).sort());
+    }
   });
   it('busca títulos e artistas sem acento, limitada e sem resposta/URL', async () => {
     for (const q of ['Canção 44', 'cancao 44', 'artista 44']) {
@@ -230,6 +240,22 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).audioUnavailableUntil).toBeNull();
     await repository.ingest(artist, { ...base, trackId: 999002, trackName: 'Obra', previewUrl: undefined });
     expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).active).toBe(false);
+  });
+  it('expande por identidade sem importar colaboradores estranhos e mantém repetição idempotente', async () => {
+    const artist = await database.db.artist.create({ data: { name: 'Expansão teste', normalizedName: 'expansao teste', categoryId: 'group0', appleArtistId: '987654321' } });
+    const track: AppleTrack = { kind: 'song', artistId: 987654321, artistName: artist.name, trackId: 987654322, trackName: 'Nova faixa', previewUrl: 'https://audio-ssl.itunes.apple.com/expand.m4a' };
+    const lookupArtistSongs = vi.fn(async (ids: string[]) => [
+      ...(ids.includes(artist.appleArtistId!) ? [track] : []),
+      { ...track, artistId: 987654399, trackId: 987654398, trackName: 'Colaborador não solicitado' },
+    ]);
+    const client = { searchArtist: async () => [], lookupTracks: async () => [], lookupArtistSongs };
+    const service = new CatalogService(database.db, new ArtistRepository(database.db), new SongRepository(database.db), client, config, application.app.log);
+    expect(await service.expandKnownArtists()).toMatchObject({ failed: 0 });
+    expect(await service.expandKnownArtists()).toMatchObject({ failed: 0 });
+    expect(await database.db.song.count({ where: { artistId: artist.id } })).toBe(1);
+    expect(await database.db.song.findUnique({ where: { appleTrackId: '987654398' } })).toBeNull();
+    expect(lookupArtistSongs).toHaveBeenCalled();
+    expect(await database.db.catalogLease.count()).toBe(0);
   });
   it('não altera disponibilidade, prioridade ou aliases em PATCH parcial', async () => {
     const artist = await database.db.artist.create({ data: { name: 'Editor', normalizedName: 'editor', categoryId: 'group1', aliases: ['Apelido'], active: false, catalogPriority: 7 } });

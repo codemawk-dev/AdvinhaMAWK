@@ -9,6 +9,18 @@ describe('ITunesClient', () => {
     expect(url.searchParams.get('country')).toBe('BR'); expect(url.searchParams.get('entity')).toBe('song');
     expect(url.searchParams.get('media')).toBe('music'); expect(tracks).toHaveLength(1);
   });
+  it('consulta discografias por IDs confirmados em lotes limitados e permite lançamentos recentes', async () => {
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => new Response(JSON.stringify({ resultCount: 1, results: [track] })));
+    const client = new ITunesClient(0, fetcher);
+    await client.lookupArtistSongs(['1', '2'], true);
+    const url = new URL(String(fetcher.mock.calls[0]![0]));
+    expect(url.pathname).toBe('/lookup'); expect(url.searchParams.get('id')).toBe('1,2');
+    expect(url.searchParams.get('sort')).toBe('recent'); expect(url.searchParams.get('limit')).toBe('200');
+    await client.lookupArtistSongs(['1'], false);
+    expect(new URL(String(fetcher.mock.calls[1]![0])).searchParams.has('sort')).toBe(false);
+    expect(() => client.lookupArtistSongs(['invalid'], true)).toThrow();
+    expect(() => client.lookupArtistSongs(Array(11).fill('1'), true)).toThrow();
+  });
   it('repete falhas transitórias e respeita o limite de tentativas', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 503 }));
     await expect(new ITunesClient(0, fetcher).searchArtist('Artista')).rejects.toThrow('temporariamente');

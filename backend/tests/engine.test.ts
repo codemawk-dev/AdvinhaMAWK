@@ -22,9 +22,9 @@ describe('normalização conservadora', () => {
     expect(versionRank('Canção')).toBeLessThan(versionRank('Canção (Ao Vivo)'));
     expect(versionRank('Canção', 'Tributo a artista')).toBe(99);
   });
-  it('mantém mais de 180 artistas únicos em dez grupos', () => {
+  it('mantém mais de 800 artistas únicos em dez grupos', () => {
     const names = Object.values(artistGroups).flatMap(g => g.artists).map(normalizeName);
-    expect(names.length).toBeGreaterThan(180); expect(new Set(names).size).toBe(names.length);
+    expect(names.length).toBeGreaterThan(800); expect(new Set(names).size).toBe(names.length);
     expect(Object.keys(artistGroups)).toHaveLength(10);
   });
 });
