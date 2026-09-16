@@ -78,7 +78,7 @@ Popularidade é um peso editorial, não uma métrica Apple. A identificação ex
 
 `SUPABASE_DATABASE_URL` tem prioridade sobre `DATABASE_URL`. Use a conexão PostgreSQL completa do Session pooler com senha codificada para URL. As chaves da API HTTP não substituem essa conexão. Segredos ficam apenas no `.env`, ignorado pelo Git.
 
-`npm run supabase:setup` aplica migrations, transfere o catálogo local e completa a meta. `npm run supabase:transfer` transfere somente categorias, artistas e músicas pela Data API; não copia jogadores ou partidas. Para banco vazio, o SQL Editor pode executar `supabase/bootstrap.sql`; registre as quatro migrations como aplicadas antes de executar Prisma migrate deploy. Em bancos existentes, aplique somente as migrations pendentes.
+`npm run supabase:setup` aplica migrations, transfere o catálogo local e completa a meta. `npm run supabase:transfer` transfere somente categorias, artistas e músicas pela Data API; não copia jogadores ou partidas. Para banco vazio, o SQL Editor pode executar `supabase/bootstrap.sql`; registre as cinco migrations como aplicadas antes de executar Prisma migrate deploy. Em bancos existentes, aplique somente as migrations pendentes.
 
 RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas internas. O backend acessa PostgreSQL com a função de servidor; não exponha a conexão ou crie leitura pública de rodadas/respostas. Em produção use HTTPS, `NODE_ENV=production` e segredos próprios.
 
@@ -88,7 +88,7 @@ RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas
 
 `npm run test:stack` valida uma partida completa pelo proxy local em 127.0.0.1:5173, busca no catálogo e as cinco durações de áudio. `npm run test:live` importa dados externos em banco temporário. Ambos dependem da disponibilidade externa.
 
-Verificação de 15/09/2026: 59 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido: 5.536 músicas, 55 artistas com músicas importadas, 201 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 5.536 fontes. Containers ainda precisam de validação em ambiente com Docker.
+Verificação de 15/09/2026: 62 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido e transferido ao Supabase: 22.362 músicas, 225 artistas com músicas importadas, 261 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 22.362 fontes. Containers ainda precisam de validação em ambiente com Docker.
 
 Os previews são fornecidos por terceiros. A implementação técnica não concede direitos de uso ou licença de distribuição; mantenha a avaliação de licenciamento do provedor antes da publicação comercial.
 
