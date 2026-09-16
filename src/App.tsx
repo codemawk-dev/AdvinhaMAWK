@@ -31,6 +31,11 @@ export default function App() {
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    let active = true;
+    if (gameId) void api.game(gameId).then(value => { if (active) setGame(current => current?.id === value.id ? current : value); }).catch(() => {});
+    return () => { active = false; };
+  }, [gameId]);
   async function load(id: string) {
     const summary = await api.game(id);
     setGame(summary);
@@ -80,7 +85,7 @@ export default function App() {
   return <GameShell onHome={screen === 'home' ? undefined : home}>
     {error && <div className="screen-error"><ErrorNotice message={error} retry={gameId && !busy ? () => void run(async () => { await load(gameId); setAudioRevision(value => value + 1); }) : undefined} /></div>}
     {loading || (busy && screen === 'home') ? <Loading /> : <>
-      {screen === 'home' && <HomeScreen profile={profile} start={start} ranking={() => setScreen('ranking')} resume={gameId ? () => void run(() => load(gameId)) : undefined} />}
+      {screen === 'home' && <HomeScreen resumePreferences={game?.id === gameId ? game.preferences : undefined} profile={profile} start={start} ranking={() => setScreen('ranking')} resume={gameId ? () => void run(() => load(gameId)) : undefined} />}
       {screen === 'round' && game && round && <RoundScreen key={`${round.roundId}-${round.attempt}-${round.revision}-${audioRevision}`} game={game} round={round} submit={submit} busy={busy} recover={() => void run(async () => { if (gameId) { await load(gameId); setAudioRevision(value => value + 1); } })} />}
       {screen === 'feedback' && answer && <FeedbackScreen answer={answer} busy={busy} next={() => void run(async () => { if (gameId) await load(gameId); })} />}
       {screen === 'result' && result && <ResultScreen result={result} restart={home} ranking={() => setScreen('ranking')} />}

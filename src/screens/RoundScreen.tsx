@@ -55,6 +55,7 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
   const next = round.clues[round.attempt + 1];
   return <div className="screen round-screen">
     <div className="round-top"><span className="eyebrow">MÚSICA {game.currentRound + 1} / {game.totalRounds}</span><span className="streak"><Flame size={16} />{game.streak}</span></div>
+    <p className="clue-help">Período desta partida: {game.preferences.yearFrom ?? 'qualquer início'} até {game.preferences.yearTo ?? 'qualquer ano'}</p>
     <h1>Qual é a música?</h1><p className="lead">Dê o play. Precisa de mais tempo? Avance a pista quando quiser.</p>
     {round.replaced && <p role="status" className="recovery-notice">Trocamos um áudio indisponível. Você continua com todas as pistas desta música, sem perder pontos.</p>}
     <div className="audio-stage">

@@ -82,6 +82,7 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     const id = response.json<{ gameId: string }>().gameId;
     const stored = await database.db.game.findUniqueOrThrow({ where: { id } });
     expect(stored.preferences).toMatchObject({ yearFrom: 2020 });
+    expect((await application.app.inject({ url: '/games/' + id, headers: headers() })).json()).toMatchObject({ preferences: { yearFrom: 2020, yearTo: 2020 } });
     const original = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id } });
     expect(original.releaseYear).toBe(2020);
     await database.db.gameRound.update({ where: { id: original.id }, data: { audioUrl: 'https://audio-ssl.itunes.apple.com/unavailable' } });

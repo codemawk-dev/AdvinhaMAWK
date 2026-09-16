@@ -1,6 +1,7 @@
 export interface MusicPreferences { genres: string[]; yearFrom: number | null; yearTo: number | null }
 export interface Profile { userId: string; displayName: string }
 export interface GameSummary {
+  preferences: MusicPreferences;
   id: string; status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED'; totalRounds: number;
   currentRound: number; score: number; streak: number; maxStreak: number;
 }

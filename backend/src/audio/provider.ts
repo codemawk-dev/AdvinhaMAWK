@@ -89,7 +89,6 @@ export class ApplePreviewProvider implements AudioProvider {
     const input = await this.download(source);
     return new Promise<Buffer>((resolve, reject) => {
       const child = spawn(this.binary, ['-hide_banner', '-loglevel', 'error', '-i', 'pipe:0',
-        '-af', 'silenceremove=start_periods=1:start_duration=0.005:start_threshold=-55dB,asetpts=N/SR/TB',
         '-t', '30', '-vn', '-map_metadata', '-1', '-ac', '1', '-ar', String(RATE), '-f', 's16le', 'pipe:1'],
       { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
       const chunks: Buffer[] = []; let size = 0; let failed = false;

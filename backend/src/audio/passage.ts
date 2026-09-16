@@ -1,5 +1,6 @@
 // Choose one stable 15-second passage for every progressive clue.
-// Energy detects audible passages, not lyrics or a chorus.
+// Prefer sustained entrances after a short breath, not the loudest mid-phrase sample.
+// Energy cannot identify lyrics or guarantee a chorus.
 export function audiblePassage(pcm: Buffer, rate = 44100): Buffer | null {
   const samples = Math.floor(pcm.length / 2);
   const length = rate * 15;
@@ -22,7 +23,15 @@ export function audiblePassage(pcm: Buffer, rate = 44100): Buffer | null {
     const coverage = window.filter(value => value >= threshold).length / 150;
     if (coverage < 0.8) continue;
     const mean = window.reduce((sum, value) => sum + value, 0) / 150;
-    const score = coverage * 2 + Math.min(energy[start]! / peakEnergy, 1) * 0.5 + mean / peakEnergy;
+    const entrance = energy.slice(start, start + 3).reduce((sum, value) => sum + value, 0) / 3;
+    const before = energy.slice(Math.max(0, start - 3), start);
+    const previous = before.length ? before.reduce((sum, value) => sum + value, 0) / before.length : entrance;
+    const breath = start >= 3 && previous < entrance * 0.55 && energy[start + 2]! >= threshold;
+    // Without a plausible entrance, preserve the first audible position instead of
+    // moving into a syllable simply because it happens to be louder.
+    const firstSound = start > 0 && energy[start - 1]! < threshold;
+    if (start > 0 && !breath && !firstSound) continue;
+    const score = coverage * 2 + mean / peakEnergy * 0.25 + (breath ? 1.5 : 0);
     if (score > best + 0.02) { best = score; offset = start * step; }
   }
   if (offset < 0) return null;
@@ -32,5 +41,8 @@ export function audiblePassage(pcm: Buffer, rate = 44100): Buffer | null {
   const rms = Math.sqrt(squares / length);
   const gain = Math.min(4, 32767 * 0.9 / Math.max(peak, 1), 32768 * 0.12 / Math.max(rms, 1));
   for (let i = 0; i < output.length; i += 2) output.writeInt16LE(Math.round(output.readInt16LE(i) * gain), i);
+  // A 2 ms ramp prevents a discontinuity click without hiding the 100 ms clue.
+  const ramp = Math.round(rate * 0.002);
+  for (let i = 0; i < ramp; i++) output.writeInt16LE(Math.round(output.readInt16LE(i * 2) * i / ramp), i * 2);
   return output;
 }
