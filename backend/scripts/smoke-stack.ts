@@ -33,7 +33,7 @@ for (let index = 0; index < 10; index++) {
       assert.equal(clip.readUInt32LE(40) / (44100 * 2), round.duration);
       console.log(JSON.stringify({ audio: 'ok', bytes: clip.length, duration: round.duration }));
     }
-    const skip = clue === 0;
+    const skip = index === 0 || clue === 0;
     const answer = await (await request(`/games/${gameId}/${skip ? 'skip' : 'answer'}`, {
       roundId: round.roundId, attempt: round.attempt, revision: round.revision, ...(skip ? {} : { songId: suggestions[clue].id }),
     })).json();

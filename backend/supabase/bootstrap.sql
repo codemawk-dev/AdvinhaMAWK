@@ -1,5 +1,5 @@
 -- For a new, empty project, when using the dashboard SQL editor instead of Prisma CLI.
--- If applied manually, mark all four migrations as applied with prisma migrate resolve before using migrate deploy.
+-- If applied manually, mark all five migrations as applied with prisma migrate resolve before using migrate deploy.
 BEGIN;
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
@@ -258,5 +258,8 @@ DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN REVOKE ALL ON "GuessAttempt" FROM anon; END IF;
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN REVOKE ALL ON "GuessAttempt" FROM authenticated; END IF;
 END $$;
+
+ALTER TABLE "Game" ADD COLUMN "preferences" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "GameRound" ADD COLUMN "releaseYear" INTEGER;
 
 COMMIT;

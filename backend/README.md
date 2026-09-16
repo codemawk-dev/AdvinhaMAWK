@@ -23,7 +23,8 @@ Cada música começa com 0,1 segundo. Errar ou pedir mais áudio libera 0,5, 2, 
 | GET | `/games/:id` | Progresso e pontuação |
 | GET | `/games/:id/round` | Prepara e recupera a pista atual |
 | GET | `/games/:id/rounds/:roundId/audio?attempt=0&revision=0` | Somente áudio atual autorizado |
-| POST | `/games/:id/answer` | Palpite ou pedido de próxima pista |
+| POST | `/games/:id/answer` | Palpite com o ID da música |
+| POST | `/games/:id/skip` | Próxima pista, sem escolher música |
 | GET | `/games/:id/result` | Resultado concluído |
 | GET | `/rankings/daily`, `/rankings/weekly`, `/rankings/all-time` | Melhores partidas de 10 músicas |
 
@@ -42,7 +43,7 @@ Exemplo da pista atual:
 }
 ```
 
-Envie `{ "roundId": "UUID", "songId": "UUID_DA_BUSCA", "attempt": 0, "revision": 0 }`. `songId: null` pede mais áudio. `roundFinished: false` mantém a mesma música e libera a próxima pista; consulte `/round` novamente. Quando `roundFinished: true`, a resposta inclui `correctAnswer`; `completed: true` indica o fim da partida.
+Envie `{ "roundId": "UUID", "songId": "UUID_DA_BUSCA", "attempt": 0, "revision": 0 }`. Para pedir mais áudio, envie `roundId`, `attempt` e `revision` para `/games/:id/skip`, sem `songId`. `roundFinished: false` mantém a mesma música e libera a próxima pista; consulte `/round` novamente. Quando `roundFinished: true`, a resposta inclui `correctAnswer`; `completed: true` indica o fim da partida.
 
 Os pontos base são 1200, 1000, 750, 450 e 200 conforme a pista do acerto, com multiplicador por sequência de acertos. O servidor calcula tudo. O ranking considera a melhor partida concluída de 10 músicas por visitante nas regras atuais, com períodos em America/Sao_Paulo. A identidade anônima torna esse ranking casual.
 
@@ -60,7 +61,7 @@ Falhas permanentes colocam a música em quarentena por 24 horas e provocam subst
 
 ## Catálogo e administração
 
-O seed cadastra 201 artistas em nove grupos editoriais. `npm run catalog:sync` importa até atingir 5.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--batch` limita a um lote; `--min-songs 5000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
+O seed cadastra 261 artistas em nove grupos editoriais. `npm run catalog:sync` importa até atingir 20.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--batch` limita a um lote; `--min-songs 20000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
 
 O scheduler usa lease no banco para evitar importações concorrentes. `SCHEDULER_ENABLED=false` desativa a execução automática. Pesquisas de palpites usam o PostgreSQL; não fazem pesquisa externa durante a partida.
 
@@ -90,3 +91,5 @@ RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas
 Verificação de 15/09/2026: 59 testes automatizados aprovados; partida real de 10 músicas concluída; 88 fontes de áudio verificadas com sucesso. Catálogo persistido: 5.536 músicas, 55 artistas com músicas importadas, 201 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 5.536 fontes. Containers ainda precisam de validação em ambiente com Docker.
 
 Os previews são fornecidos por terceiros. A implementação técnica não concede direitos de uso ou licença de distribuição; mantenha a avaliação de licenciamento do provedor antes da publicação comercial.
+
+Preferências: POST /games aceita preferences com genres (IDs dos grupos), yearFrom e yearTo (ano ou null). O servidor persiste e respeita os filtros inclusive nas trocas de áudio. Usa originalYear quando disponível, senão o ano de releaseDate, que pode ser uma reedição. O ano é revelado após a rodada e no resultado. A migração music_preferences adiciona preferences e releaseYear; o bootstrap agora contém cinco migrations.

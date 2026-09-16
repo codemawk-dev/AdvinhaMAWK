@@ -16,7 +16,7 @@ export class GameSelectionService {
     const decades = new Map<number, number>();
     const available = pool.filter(song => song.active && song.artist.active);
     if (new Set(available.map(s => s.normalizedTitle)).size < rounds) {
-      throw new AppError(409, 'CATALOG_TOO_SMALL', 'Ainda estamos preparando o catálogo. Tente novamente em instantes.');
+      throw new AppError(409, 'CATALOG_TOO_SMALL', 'Não há músicas suficientes para esta combinação. Amplie os estilos ou o período e tente novamente.');
     }
     for (let index = 0; index < rounds; index++) {
       let candidates = available.filter(song => !titles.has(song.normalizedTitle) && !selected.some(s => s.id === song.id));

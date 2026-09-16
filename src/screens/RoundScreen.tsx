@@ -51,7 +51,7 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
   const next = round.clues[round.attempt + 1];
   return <div className="screen round-screen">
     <div className="round-top"><span className="eyebrow">MÚSICA {game.currentRound + 1} / {game.totalRounds}</span><span className="streak"><Flame size={16} />{game.streak}</span></div>
-    <h1>Qual é a música?</h1><p className="lead">Digite o título ou artista e selecione seu palpite.</p>
+    <h1>Qual é a música?</h1><p className="lead">Dê o play. Precisa de mais tempo? Avance a pista quando quiser.</p>
     {round.replaced && <p role="status" className="recovery-notice">Trocamos um áudio indisponível. Você continua com todas as pistas desta música, sem perder pontos.</p>}
     <div className="audio-stage">
       <button className={`record-button ${playing ? 'is-playing' : ''}`} onClick={() => void play()} disabled={busy || !ready} aria-label={playing ? 'Pausar trecho' : ready ? 'Ouvir trecho' : 'Preparando áudio'}>
@@ -72,10 +72,18 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
       <span className="played" style={{ width: `${position / 15 * 100}%` }} />
     </div>
     <ol className="clue-steps" aria-label="Progressão das pistas">{round.clues.map((duration, index) =>
-      <li key={duration} aria-current={index === round.attempt ? 'step' : undefined} className={index <= round.attempt ? 'unlocked' : ''}>{seconds(duration)}s</li>)}</ol>
+      <li key={duration} aria-current={index === round.attempt ? 'step' : undefined} className={index <= round.attempt ? 'unlocked' : ''}>
+        {index === round.attempt + 1 ? <button type="button" disabled={busy || !ready} onClick={() => finish(null)} aria-label={`Avançar para ${seconds(duration)} segundos`}>{seconds(duration)}s <SkipForward size={12} aria-hidden="true" /></button> : <span>{seconds(duration)}s</span>}
+      </li>)}</ol>
+    <div className="more-audio-controls">
+      <button className="more-audio-button" type="button" disabled={busy || !ready} onClick={() => finish(null)}>
+        <SkipForward size={20} aria-hidden="true" />{next ? `Ouvir mais · avançar para ${seconds(next)}s` : 'Não sei · revelar música'}
+      </button>
+      <p>{next ? 'Avance sem digitar ou escolher uma música. O trecho aumenta e vale menos pontos.' : 'Você já liberou 15 segundos. Envie seu palpite ou revele a resposta.'}</p>
+    </div>
     <div className="round-stats"><span>Pista {round.attempt + 1} de {round.clues.length} · sem cronômetro</span><span>{game.score.toLocaleString('pt-BR')} pontos</span></div>
     {round.guesses.length > 0 && <ol className="guess-history" aria-label="Palpites anteriores">{round.guesses.map((guess, index) =>
-      <li key={index}><X size={16} aria-hidden="true" /><span>{guess.title ? `${guess.title} — ${guess.artist}` : 'Pista pulada'}<small>{seconds(round.clues[index]!)}s</small></span></li>)}</ol>}
+      <li key={index}>{guess.title ? <X size={16} aria-hidden="true" /> : <SkipForward size={16} aria-hidden="true" />}<span>{guess.title ? `${guess.title} — ${guess.artist}` : 'Você pediu mais tempo'}<small>{seconds(round.clues[index]!)}s</small></span></li>)}</ol>}
     <form className="guess-form" onSubmit={event => { event.preventDefault(); if (selected && ready && !busy) finish(selected.id); }}>
       <label htmlFor="song-search" className="field-label">Qual música você reconheceu?</label>
       <div className="song-search-wrap"><Search size={18} aria-hidden="true" />
@@ -100,7 +108,6 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
       </div>}
       <button className="primary-button" type="submit" disabled={!selected || !ready || busy}>{busy ? 'Conferindo…' : 'Enviar palpite'}</button>
     </form>
-    <button className="text-button" disabled={busy || !ready} onClick={() => finish(null)}><SkipForward size={16} />{next ? `Ouvir mais · liberar ${seconds(next)}s` : 'Revelar música'}</button>
-    <p className="clue-help">Cada erro ou pulo libera mais da mesma música. Quanto menos ouvir, mais pontos.</p>
+    <p className="clue-help">Reconheceu? Busque pelo título ou artista e envie seu palpite.</p>
   </div>;
 }

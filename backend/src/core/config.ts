@@ -7,7 +7,7 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   ADMIN_API_KEY: z.string().min(24),
-  CATALOG_MIN_SONGS: z.coerce.number().int().min(1).max(100000).default(5000),
+  CATALOG_MIN_SONGS: z.coerce.number().int().min(1).max(100000).default(20000),
   CATALOG_BATCH_SIZE: z.coerce.number().int().min(1).max(30).default(9),
   CATALOG_INTERVAL_MS: z.coerce.number().int().min(10000).default(60000),
   CATALOG_REFRESH_HOURS: z.coerce.number().int().min(1).default(168),

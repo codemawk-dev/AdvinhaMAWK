@@ -1,3 +1,4 @@
+import { filterSongs, preferencesSchema, type MusicPreferences } from './preferences.js';
 import type { Game, GameRound } from '@prisma/client';
 import type { SongRepository } from '../catalog/repositories.js';
 import { AppError } from '../core/errors.js';
@@ -12,17 +13,17 @@ export interface RoundResponse {
 }
 export interface AnswerResponse {
   correct: boolean; points: number; streak: number; score: number; completed: boolean; roundFinished: boolean;
-  correctAnswer?: { title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
+  correctAnswer?: { year: number | null; title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
 }
 export class GameService {
   constructor(private games: GameRepository, private songs: SongRepository, private audioProvider: AudioProvider,
     private selection = new GameSelectionService()) {}
-  async create(userId: string, rounds: number) {
+  async create(userId: string, rounds: number, preferences: MusicPreferences = preferencesSchema.parse({})) {
     const [pool, recent] = await Promise.all([this.songs.playable(), this.games.recent(userId)]);
-    const selected = this.selection.select(pool, rounds, recent);
-    const game = await this.games.create({ user: { connect: { id: userId } }, totalRounds: rounds, rulesVersion: 2,
+    const selected = this.selection.select(filterSongs(pool, preferences), rounds, recent);
+    const game = await this.games.create({ user: { connect: { id: userId } }, totalRounds: rounds, rulesVersion: 2, preferences,
       expiresAt: new Date(Date.now() + 24 * 3600000), rounds: { create: selected.map((song, position) => ({
-        position, songId: song.id, duration: CLUES[0], difficultyWeight: song.difficultyWeight,
+        position, releaseYear: song.originalYear ?? song.releaseDate?.getUTCFullYear() ?? null, songId: song.id, duration: CLUES[0], difficultyWeight: song.difficultyWeight,
         audioUrl: song.previewUrl, title: song.title, artistName: song.artist.name, coverUrl: song.coverUrl, appleMusicUrl: song.appleMusicUrl,
       })) },
     });
@@ -49,12 +50,12 @@ export class GameService {
       if (current.answeredAt || current.revision !== failed.revision || current.clueIndex !== failed.clueIndex) return;
       const used = await tx.gameRound.findMany({ where: { gameId }, select: { songId: true } });
       const ids = new Set(used.map(round => round.songId));
-      const candidates = pool.filter(song => !ids.has(song.id));
+      const candidates = filterSongs(pool, preferencesSchema.parse(game.preferences)).filter(song => !ids.has(song.id));
       const replacement = candidates.length ? this.selection.select(candidates, 1, ids)[0] : undefined;
       await tx.song.updateMany({ where: { id: failed.songId, previewUrl: failed.audioUrl }, data: { audioUnavailableUntil: new Date(Date.now() + 24 * 3600000) } });
       if (!replacement) throw new AppError(503, 'AUDIO_UNAVAILABLE', 'Nenhum trecho alternativo disponível agora. Tente novamente; sua pontuação está preservada.');
       await tx.gameRound.update({ where: { id: current.id }, data: {
-        songId: replacement.id, title: replacement.title, artistName: replacement.artist.name,
+        releaseYear: replacement.originalYear ?? replacement.releaseDate?.getUTCFullYear() ?? null, songId: replacement.id, title: replacement.title, artistName: replacement.artist.name,
         audioUrl: replacement.previewUrl, coverUrl: replacement.coverUrl, appleMusicUrl: replacement.appleMusicUrl,
         difficultyWeight: replacement.difficultyWeight, duration: CLUES[0], clueIndex: 0, revision: { increment: 1 }, startedAt: null,
       } });
@@ -108,7 +109,7 @@ export class GameService {
       await tx.game.update({ where: { id: gameId }, data: { currentRound: { increment: 1 }, score: { increment: points }, streak,
         maxStreak: Math.max(game.maxStreak, streak), status: completed ? 'COMPLETED' : 'ACTIVE', completedAt: completed ? new Date() : null } });
       return { correct, points, streak, score: game.score + points, completed, roundFinished: true,
-        correctAnswer: { title: round.title, artist: round.artistName, cover: round.coverUrl, appleMusicUrl: round.appleMusicUrl } };
+        correctAnswer: { year: round.releaseYear, title: round.title, artist: round.artistName, cover: round.coverUrl, appleMusicUrl: round.appleMusicUrl } };
     });
   }
   async audio(gameId: string, userId: string, roundId: string, attempt: number, revision: number, signal?: AbortSignal) {

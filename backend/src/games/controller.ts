@@ -1,3 +1,4 @@
+import { preferencesSchema } from './preferences.js';
 import type { FastifyInstance } from 'fastify';
 import type { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
@@ -21,12 +22,12 @@ export function gameRoutes(app: FastifyInstance, games: GameService, db: PrismaC
     return { userId, displayName: user.displayName };
   });
   app.post('/games', { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (request, reply) => {
-    const body = z.object({ rounds: z.number().int().min(1).max(20).default(10) }).strict().parse(request.body ?? {});
+    const body = z.object({ rounds: z.number().int().min(1).max(20).default(10), preferences: preferencesSchema.optional() }).strict().parse(request.body ?? {});
     const existing = request.headers.authorization || request.cookies.session;
     const session = existing ? null : await createSession(app, db);
     const userId = session?.userId ?? await authenticate(request);
     if (session) reply.setCookie('session', session.accessToken, cookie);
-    const game = await games.create(userId, body.rounds);
+    const game = await games.create(userId, body.rounds, body.preferences);
     return reply.code(201).send({ ...game, ...(session ? { accessToken: session.accessToken } : {}) });
   });
   app.get('/games/:gameId', async request => {

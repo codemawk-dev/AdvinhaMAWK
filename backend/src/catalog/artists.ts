@@ -10,7 +10,15 @@ export const artistGroups: Record<string, { name: string; artists: string[] }> =
   mpb: { name: 'MPB', artists: ['Caetano Veloso', 'Gilberto Gil', 'Chico Buarque', 'Djavan', 'Maria Bethânia', 'Gal Costa', 'Milton Nascimento', 'Elis Regina', 'Marisa Monte', 'Adriana Calcanhotto', 'Ana Carolina', 'Seu Jorge', 'Vanessa da Mata', 'Tim Maia', 'Jorge Ben Jor', 'Gonzaguinha', 'Belchior', 'Zé Ramalho', 'Maria Rita', 'Nando Reis', 'Cássia Eller', 'Roberto Carlos', 'Simone', 'Fagner', 'Ney Matogrosso', 'Secos & Molhados'] },
   rock: { name: 'Rock nacional', artists: ['Legião Urbana', 'Capital Inicial', 'Titãs', 'Paralamas do Sucesso', 'Barão Vermelho', 'Cazuza', 'Charlie Brown Jr.', 'Raimundos', 'CPM 22', 'NX Zero', 'Fresno', 'Skank', 'Jota Quest', 'Pitty', 'Detonautas', 'Engenheiros do Hawaii', 'Rita Lee', 'Os Mutantes', 'Raul Seixas', 'RPM', 'Ultraje a Rigor', 'Los Hermanos', 'O Rappa', 'Chico Science & Nação Zumbi'] },
 };
+artistGroups.sertanejo!.artists.push('João Bosco & Vinícius', 'Victor & Leo', 'César Menotti & Fabiano', 'Edson & Hudson', 'Rick & Renner', 'João Paulo & Daniel', 'Chrystian & Ralf', 'Rio Negro & Solimões', 'Eduardo Costa', 'Michel Teló', 'Israel Novaes', 'Lucas Lucco', 'Cristiano Araújo', 'Felipe Araújo', 'Marcos & Belutti', 'João Neto & Frederico');
+artistGroups.mpb!.artists.push('Tom Jobim', 'Vinicius de Moraes', 'João Gilberto', 'Toquinho', 'Ivan Lins', 'Leila Pinheiro', 'Zizi Possi', 'Zélia Duncan', 'Lenine', 'Zeca Baleiro', 'Flávio Venturini', 'Beto Guedes', 'Lô Borges', 'Oswaldo Montenegro');
+artistGroups.pagode_samba!.artists.push('Nelson Cavaquinho', 'Adoniran Barbosa', 'Noel Rosa', 'Nelson Sargento', 'Wilson Moreira', 'Bezerra da Silva', 'Dudu Nobre', 'Diogo Nogueira', 'Teresa Cristina', 'Leci Brandão');
+artistGroups.rock!.artists.push('Biquini Cavadão', 'Nenhum de Nós', 'Ira!', 'Kid Abelha', 'Pato Fu', '14 Bis', 'Camisa de Vênus', 'Tihuana', 'Dead Fish', 'Moptop');
+artistGroups.pop!.artists.push('Sandy', 'Wanessa Camargo', 'Lexa', 'Kell Smith', 'Vitão', 'Duda Beat', 'ANAVITÓRIA', 'Clarice Falcão', 'Tiê', 'Roberta Campos');
 export const artistAliases: Record<string, string[]> = {
+  'Tom Jobim': ['Antônio Carlos Jobim', 'Antonio Carlos Jobim'],
+  'Rio Negro & Solimões': ['Rionegro & Solimões'],
+  'Biquini Cavadão': ['Biquini'],
   'Paralamas do Sucesso': ['Os Paralamas do Sucesso'],
   'MC Kevinho': ['Kevinho'],
   'MC Kevin o Chris': ['Kevin O Chris'],

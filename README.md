@@ -2,7 +2,7 @@
 
 Jogo brasileiro de adivinhar músicas, com frontend React 19 e backend Fastify, Prisma e PostgreSQL. O jogador digita o título ou artista, seleciona uma sugestão do catálogo e envia seu palpite. Cada uma das 10 músicas oferece cinco pistas de áudio: **0,1 → 0,5 → 2 → 8 → 15 segundos**.
 
-A seleção mistura automaticamente os grupos musicais internos e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém 201 artistas configurados e a importação busca atingir pelo menos 5.000 músicas ativas com preview.
+Antes da partida, selecione estilos musicais e intervalo de anos. O padrão da interface é de 2015 até o ano atual. O sorteio respeita esses filtros e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém 261 artistas configurados e a importação busca atingir pelo menos 20.000 músicas ativas com preview.
 
 ## Desenvolvimento
 
@@ -32,7 +32,7 @@ As credenciais ficam exclusivamente em `backend/.env`. O frontend não precisa d
 2. Execute `npm --prefix backend run supabase:setup`. O comando valida o projeto, aplica migrations, transfere um catálogo local disponível e completa a importação até o mínimo configurado.
 3. Inicie a API. Quando presente, `SUPABASE_DATABASE_URL` tem prioridade sobre `DATABASE_URL`.
 
-Alternativa para preparar um banco vazio pelo SQL Editor: execute `backend/supabase/bootstrap.sql`, depois registre cada uma das quatro migrations com `prisma migrate resolve --applied NOME_DA_MIGRATION` antes de usar `migrate deploy`. Não execute o bootstrap em um banco que já contém as tabelas.
+Alternativa para preparar um banco vazio pelo SQL Editor: execute `backend/supabase/bootstrap.sql`, depois registre cada uma das cinco migrations com `prisma migrate resolve --applied NOME_DA_MIGRATION` antes de usar `migrate deploy`. Não execute o bootstrap em um banco que já contém as tabelas.
 
 Com as tabelas prontas, `npm --prefix backend run supabase:transfer` transfere categorias, artistas e músicas do PostgreSQL local pela API de dados usando `SUPABASE_SECRET_KEY`. O comando preserva IDs já existentes e não copia jogadores ou partidas. Essa alternativa de carga não substitui a conexão PostgreSQL exigida pela API do jogo.
 

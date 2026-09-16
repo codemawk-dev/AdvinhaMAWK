@@ -82,6 +82,7 @@ model Game {
   user         User     @relation(fields: [userId], references: [id])
   status       GameStatus @default(ACTIVE)
   rulesVersion Int @default(2)
+  preferences Json @default("{}")
   totalRounds  Int
   currentRound Int      @default(0)
   score        Int      @default(0)
@@ -110,7 +111,8 @@ model GameRound {
   // Immutable snapshots keep ongoing games stable when the catalogue changes.
   audioUrl         String
   title            String
-  artistName       String
+  releaseYear      Int?
+    artistName       String
   coverUrl         String?
   appleMusicUrl    String?
   startedAt        DateTime?

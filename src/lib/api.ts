@@ -1,3 +1,4 @@
+export interface MusicPreferences { genres: string[]; yearFrom: number | null; yearTo: number | null }
 export interface Profile { userId: string; displayName: string }
 export interface GameSummary {
   id: string; status: 'ACTIVE' | 'COMPLETED' | 'EXPIRED'; totalRounds: number;
@@ -10,11 +11,11 @@ export interface Round {
 export interface SongSuggestion { id: string; title: string; artist: string }
 export interface Answer {
   correct: boolean; points: number; streak: number; score: number; completed: boolean; roundFinished: boolean;
-  correctAnswer?: { title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
+  correctAnswer?: { year: number | null; title: string; artist: string; cover: string | null; appleMusicUrl: string | null };
 }
 export interface Result extends GameSummary {
   correctAnswers: number;
-  rounds: { position: number; title: string; artistName: string; duration: number; answer: { correct: boolean; points: number } | null }[];
+  rounds: { releaseYear: number | null; position: number; title: string; artistName: string; duration: number; answer: { correct: boolean; points: number } | null }[];
 }
 export type RankingPeriod = 'daily' | 'weekly' | 'all-time';
 export interface Ranking { entries: { position: number; playerId: string; displayName: string; score: number }[] }
@@ -44,7 +45,7 @@ export async function request<T>(path: string, body?: unknown): Promise<T> {
 export const api = {
   profile: () => request<Profile>('/sessions/me'),
   session: (displayName: string) => request<Profile>('/sessions', { displayName }),
-  create: () => request<{ gameId: string }>('/games', { rounds: 10 }),
+  create: (preferences?: MusicPreferences) => request<{ gameId: string }>('/games', { rounds: 10, preferences }),
   game: (id: string) => request<GameSummary>(`/games/${id}`),
   round: (id: string) => request<Round>(`/games/${id}/round`),
   answer: (id: string, round: Round, songId: string | null) => request<Answer>(`/games/${id}/${songId === null ? 'skip' : 'answer'}`, { roundId: round.roundId, attempt: round.attempt, revision: round.revision, ...(songId === null ? {} : { songId }) }),

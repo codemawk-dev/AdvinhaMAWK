@@ -70,6 +70,21 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     for (const payload of [{ category: 'rock' }, { difficulty: 'easy' }, { rounds: 10, score: 999 }])
       expect((await application.app.inject({ method: 'POST', url: '/games', headers: headers(), payload })).statusCode).toBe(400);
   });
+  it('persiste o período e mantém o filtro ao substituir áudio indisponível', async () => {
+    const response = await application.app.inject({ method: 'POST', url: '/games', remoteAddress: '127.0.9.1', headers: headers(), payload: { rounds: 1, preferences: { yearFrom: 2020, yearTo: 2020 } } });
+    expect(response.statusCode, response.body).toBe(201);
+    const id = response.json<{ gameId: string }>().gameId;
+    const stored = await database.db.game.findUniqueOrThrow({ where: { id } });
+    expect(stored.preferences).toMatchObject({ yearFrom: 2020 });
+    const original = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id } });
+    expect(original.releaseYear).toBe(2020);
+    await database.db.gameRound.update({ where: { id: original.id }, data: { audioUrl: 'https://audio-ssl.itunes.apple.com/unavailable' } });
+    const current = await round(id);
+    expect(current.replaced).toBe(true);
+    const replacement = await database.db.gameRound.findUniqueOrThrow({ where: { id: current.roundId } });
+    expect(replacement.releaseYear).toBe(2020);
+    expect((await answer(id, current)).json()).toMatchObject({ correctAnswer: { year: 2020 } });
+  });
   it('prepara antes da rodada, começa em 0.1s e não revela alternativas nem resposta', async () => {
     const id = await create(); const current = await round(id);
     expect(current).toMatchObject({ duration: 0.1, attempt: 0, revision: 0, clues: [0.1, 0.5, 2, 8, 15], guesses: [] });

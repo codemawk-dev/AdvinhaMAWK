@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api, ApiError, type Answer, type GameSummary, type Profile, type Result, type Round } from './lib/api';
+import { api, ApiError, type MusicPreferences, type Answer, type GameSummary, type Profile, type Result, type Round } from './lib/api';
 import { ErrorNotice, GameShell, Loading } from './components/GameShell';
 import { HomeScreen } from './screens/HomeScreen';
 import { RoundScreen } from './screens/RoundScreen';
@@ -51,7 +51,7 @@ export default function App() {
       }
     } finally { locked.current = false; setBusy(false); }
   }
-  const start = (name: string) => void run(async () => {
+  const start = (name: string, preferences?: MusicPreferences) => void run(async () => {
     if (!profile) {
       try { setProfile(await api.profile()); }
       catch (error) {
@@ -59,7 +59,7 @@ export default function App() {
         const session = await api.session(name); setProfile({ ...session, displayName: name });
       }
     }
-    const created = await api.create();
+    const created = await api.create(preferences);
     savedGame.set(created.gameId); setGameId(created.gameId); await load(created.gameId);
   });
   const submit = (option: string | null) => void run(async () => {
@@ -83,7 +83,7 @@ export default function App() {
       {screen === 'home' && <HomeScreen profile={profile} start={start} ranking={() => setScreen('ranking')} resume={gameId ? () => void run(() => load(gameId)) : undefined} />}
       {screen === 'round' && game && round && <RoundScreen key={`${round.roundId}-${round.attempt}-${round.revision}-${audioRevision}`} game={game} round={round} submit={submit} busy={busy} recover={() => void run(async () => { if (gameId) { await load(gameId); setAudioRevision(value => value + 1); } })} />}
       {screen === 'feedback' && answer && <FeedbackScreen answer={answer} busy={busy} next={() => void run(async () => { if (gameId) await load(gameId); })} />}
-      {screen === 'result' && result && <ResultScreen result={result} restart={() => start(profile?.displayName ?? 'Jogador')} ranking={() => setScreen('ranking')} />}
+      {screen === 'result' && result && <ResultScreen result={result} restart={home} ranking={() => setScreen('ranking')} />}
       {screen === 'ranking' && <RankingScreen userId={profile?.userId} />}
     </>}
   </GameShell>;

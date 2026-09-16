@@ -7,6 +7,13 @@
 .clue-steps { display: flex; justify-content: space-between; list-style: none; padding: 10px 0; color: #687180; font-size: 12px; }
 .clue-steps .unlocked { color: #b5c9cd; }
 .clue-steps [aria-current] { color: #67e8f9; font-weight: 800; }
+.clue-steps li { display: flex; align-items: center; min-height: 36px; }
+.clue-steps button { display: flex; align-items: center; gap: 4px; padding: 8px 10px; border: 1px solid #399bab; border-radius: 8px; color: #a5f3fc; background: #15343b; font: inherit; cursor: pointer; }
+.more-audio-controls { margin: 4px 0 18px; }
+.more-audio-button { display: flex; width: 100%; align-items: center; justify-content: center; gap: 9px; border: 1px solid #67e8f9; border-radius: 12px; padding: 15px 12px; background: #16444d; color: #cffafe; font: inherit; font-weight: 750; cursor: pointer; }
+.more-audio-button:hover:not(:disabled), .clue-steps button:hover:not(:disabled) { background: #205c66; }
+.more-audio-button:focus-visible, .clue-steps button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 3px; }
+.more-audio-controls p { color: #a8b4c6; font-size: 12px; line-height: 1.5; text-align: center; margin: 8px 0 0; }
 .guess-form { display: flex; flex-direction: column; gap: 12px; }
 .song-search-wrap { display: flex; gap: 10px; align-items: center; border: 1px solid #45515f; border-radius: 12px; padding: 14px; background: #171b23; }
 .song-search-wrap:focus-within { outline: 2px solid #67e8f9; outline-offset: 2px; }
@@ -168,3 +175,13 @@ button:focus-visible,input:focus-visible,a:focus-visible { outline: 2px solid va
 .ranking-tabs { display: flex; gap: 7px; padding: 5px; background: var(--color-surface); border-radius: 12px; }.ranking-tabs button { flex: 1; background: transparent; border: 0; color: var(--color-text-muted); padding: 11px; border-radius: 9px; cursor: pointer; font-size: 12px; }.ranking-tabs button.active { color: white; background: #ff385c; }.ranking-list { margin: 0; padding: 0; list-style: none; }.ranking-list li { display: flex; align-items: center; gap: 12px; padding: 15px 8px; border-bottom: 1px solid var(--color-border); font-size: 13px; }.ranking-list li strong { flex: 1; overflow-wrap: anywhere; }.rank-number { font-size: 16px; color: var(--color-secondary); width: 24px; }.ranking-list small { color: var(--color-text-muted); font-size: 10px; }.your-ranking { background: #ff385c10; border-radius: 9px; }.empty-state { color: var(--color-text-muted); text-align: center; padding: 35px 20px; font-size: 14px; line-height: 1.7; }
 @media (min-width: 700px) { .game-shell { margin: 22px auto; min-height: calc(100dvh - 44px); border: 1px solid var(--color-border); border-radius: 24px; box-shadow: 0 25px 80px #0006; } body { background: radial-gradient(ellipse at 30% 0%,#231626,#0b0d12 55%); } .screen { padding-inline: 36px; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+.music-preferences { border: 1px solid var(--color-border); border-radius: 16px; padding: 16px; margin: 8px 0; text-align: left; }
+.music-preferences legend { font-weight: 750; padding: 0 6px; }
+.music-preferences p { font-size: 12px; line-height: 1.5; color: #a8b4c6; margin: 8px 0 12px; }
+.genre-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.genre-options label { display: flex; align-items: center; gap: 6px; padding: 8px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer; font-size: 13px; }
+.genre-options label:has(input:checked) { border-color: #67e8f9; background: #16444d; }
+.genre-options input { accent-color: #67e8f9; }
+.year-fields { display: flex; gap: 12px; margin-top: 16px; }
+.year-fields label { flex: 1; min-width: 0; font-size: 13px; }
+.year-fields input { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px; background: #161a21; border: 1px solid #454c59; border-radius: 8px; color: white; }

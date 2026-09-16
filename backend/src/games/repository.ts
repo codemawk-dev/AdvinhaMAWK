@@ -14,7 +14,7 @@ export class GameRepository {
   create(data: Prisma.GameCreateInput) { return this.db.game.create({ data }); }
   results(gameId: string) {
     return this.db.gameRound.findMany({ where: { gameId }, orderBy: { position: 'asc' },
-      select: { position: true, title: true, artistName: true, duration: true, answer: { select: { correct: true, points: true } } } });
+      select: { position: true, releaseYear: true, title: true, artistName: true, duration: true, answer: { select: { correct: true, points: true } } } });
   }
   async recent(userId: string): Promise<Set<string>> {
     const games = await this.db.game.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 20, select: { rounds: { select: { songId: true } } } });
