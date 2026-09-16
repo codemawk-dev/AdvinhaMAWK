@@ -34,6 +34,10 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
     }, 250);
     return () => { current = false; clearTimeout(timer); };
   }, [query, selected]);
+  useEffect(() => {
+    if (open && active >= 0) document.getElementById(`suggestion-${active}`)?.scrollIntoView({ block: 'nearest' });
+  }, [active, open]);
+  const listOpen = open && !selected && query.trim().length >= 2;
   function change(value: string) {
     setQuery(value); setSelected(null); setSuggestions([]); setActive(-1); setSearchError('');
     setOpen(true); setSearching(value.trim().length >= 2);
@@ -87,14 +91,14 @@ export function RoundScreen({ round, game, submit, recover, busy }: {
     <form className="guess-form" onSubmit={event => { event.preventDefault(); if (selected && ready && !busy) finish(selected.id); }}>
       <label htmlFor="song-search" className="field-label">Qual música você reconheceu?</label>
       <div className="song-search-wrap"><Search size={18} aria-hidden="true" />
-        <input id="song-search" role="combobox" aria-label="Buscar música ou artista" aria-autocomplete="list" aria-expanded={open && query.trim().length >= 2}
-          aria-controls="song-suggestions" aria-activedescendant={active >= 0 ? `suggestion-${active}` : undefined}
+        <input id="song-search" role="combobox" aria-label="Buscar música ou artista" aria-autocomplete="list" aria-expanded={listOpen}
+          aria-controls={listOpen ? 'song-suggestions' : undefined} aria-activedescendant={listOpen && active >= 0 && active < suggestions.length ? `suggestion-${active}` : undefined}
           autoComplete="off" maxLength={100} placeholder="Digite uma música ou artista…" value={query} disabled={busy}
-          onChange={event => change(event.target.value)} onFocus={() => { if (!selected) setOpen(true); }}
+          onBlur={() => { setOpen(false); setActive(-1); }} onChange={event => change(event.target.value)} onFocus={() => { if (!selected) setOpen(true); }}
           onKeyDown={event => {
             if (event.key === 'Escape') { setOpen(false); setActive(-1); }
             if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); setActive(value => Math.min(value + 1, suggestions.length - 1)); }
-            if (event.key === 'ArrowUp') { event.preventDefault(); setActive(value => Math.max(0, value - 1)); }
+            if (event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); setActive(value => suggestions.length ? Math.max(0, value - 1) : -1); }
             if (event.key === 'Enter' && open && !selected) { event.preventDefault(); if (active >= 0 && suggestions[active]) choose(suggestions[active]); }
           }} />
       </div>

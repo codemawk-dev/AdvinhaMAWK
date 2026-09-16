@@ -65,6 +65,7 @@ export class SongRepository {
         album: track.collectionName ?? null, previewUrl: track.previewUrl!, coverUrl: track.artworkUrl100 ?? null,
         appleMusicUrl: track.trackViewUrl ?? null, genre: track.primaryGenreName ?? null,
         releaseDate: track.releaseDate ? new Date(track.releaseDate) : null,
+        ...(existing && existing.previewUrl !== track.previewUrl ? { audioUnavailableUntil: null } : {}),
         versionRank: rank, active: true, lastSeenAt: new Date(), lastVerifiedAt: new Date(),
       };
       if (existing) await tx.song.update({ where: { id: existing.id }, data });

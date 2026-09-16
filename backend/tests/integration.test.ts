@@ -159,6 +159,27 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     expect(await database.db.guessAttempt.count({ where: { roundId: current.roundId, revision: 0 } })).toBe(1);
     expect((await database.db.game.findUniqueOrThrow({ where: { id } })).score).toBe(0);
   });
+  it('mantém quarentena mesmo sem substituta e não repete título na recuperação', async () => {
+    const id = await create(1);
+    const target = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id }, include: { song: true } });
+    const other = await database.db.song.findFirstOrThrow({ where: { id: { not: target.songId }, artistId: { not: target.song.artistId } } });
+    const repo = new SongRepository(database.db);
+    const pool = await repo.playable();
+    const onlySameTitle = pool.filter(song => song.id === other.id).map(song => ({ ...song, normalizedTitle: target.song.normalizedTitle }));
+    const mock = vi.spyOn(SongRepository.prototype, 'playable').mockResolvedValue(onlySameTitle);
+    try {
+      await database.db.song.update({ where: { id: target.songId }, data: { previewUrl: 'https://audio-ssl.itunes.apple.com/unavailable' } });
+      await database.db.gameRound.update({ where: { id: target.id }, data: { audioUrl: 'https://audio-ssl.itunes.apple.com/unavailable' } });
+      expect((await application.app.inject({ url: '/games/' + id + '/round', headers: headers() })).statusCode).toBe(503);
+      const failed = await database.db.song.findUniqueOrThrow({ where: { id: target.songId } });
+      expect(failed.audioUnavailableUntil!.getTime()).toBeGreaterThan(Date.now());
+      expect((await database.db.gameRound.findUniqueOrThrow({ where: { id: target.id } })).songId).toBe(target.songId);
+      expect(await database.db.guessAttempt.count({ where: { roundId: target.id } })).toBe(0);
+    } finally {
+      mock.mockRestore();
+      await database.db.song.update({ where: { id: target.songId }, data: { previewUrl: target.song.previewUrl, audioUnavailableUntil: null } });
+    }
+  });
   it('não consome tentativa nem bloqueia catálogo numa falha temporária de rede', async () => {
     const id = await create(1);
     const target = await database.db.gameRound.findFirstOrThrow({ where: { gameId: id } });
@@ -200,6 +221,12 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     await repository.ingest(artist, { ...base, trackId: 999003, trackName: 'Obra (Remix)' });
     expect(await database.db.song.count({ where: { artistId: artist.id } })).toBe(1);
     expect(await database.db.song.findUnique({ where: { id: stored.id } })).toMatchObject({ popularityWeight: 3, originalYear: 1980 });
+    const quarantine = new Date(Date.now() + 86400000);
+    await database.db.song.update({ where: { id: stored.id }, data: { audioUnavailableUntil: quarantine } });
+    await repository.ingest(artist, { ...base, trackId: 999002, trackName: 'Obra' });
+    expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).audioUnavailableUntil).toEqual(quarantine);
+    await repository.ingest(artist, { ...base, trackId: 999002, trackName: 'Obra', previewUrl: 'https://audio-ssl.itunes.apple.com/new.m4a' });
+    expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).audioUnavailableUntil).toBeNull();
     await repository.ingest(artist, { ...base, trackId: 999002, trackName: 'Obra', previewUrl: undefined });
     expect((await database.db.song.findUniqueOrThrow({ where: { id: stored.id } })).active).toBe(false);
   });

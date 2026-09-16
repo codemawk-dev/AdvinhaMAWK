@@ -44,22 +44,24 @@ export class GameService {
   }
   private async replace(gameId: string, userId: string, failed: GameRound) {
     const pool = await this.songs.playable();
-    return this.games.transaction(gameId, userId, async tx => {
+    const available = await this.games.transaction(gameId, userId, async tx => {
       const game = await tx.game.findUniqueOrThrow({ where: { id: gameId } }); this.assertActive(game);
       const current = await tx.gameRound.findUniqueOrThrow({ where: { id: failed.id } });
       if (current.answeredAt || current.revision !== failed.revision || current.clueIndex !== failed.clueIndex) return;
-      const used = await tx.gameRound.findMany({ where: { gameId }, select: { songId: true } });
+      const used = await tx.gameRound.findMany({ where: { gameId }, select: { songId: true, song: { select: { normalizedTitle: true } } } });
       const ids = new Set(used.map(round => round.songId));
-      const candidates = filterSongs(pool, preferencesSchema.parse(game.preferences)).filter(song => !ids.has(song.id));
+      const titles = new Set(used.map(round => round.song.normalizedTitle));
+      const candidates = filterSongs(pool, preferencesSchema.parse(game.preferences)).filter(song => !ids.has(song.id) && !titles.has(song.normalizedTitle));
       const replacement = candidates.length ? this.selection.select(candidates, 1, ids)[0] : undefined;
       await tx.song.updateMany({ where: { id: failed.songId, previewUrl: failed.audioUrl }, data: { audioUnavailableUntil: new Date(Date.now() + 24 * 3600000) } });
-      if (!replacement) throw new AppError(503, 'AUDIO_UNAVAILABLE', 'Nenhum trecho alternativo disponível agora. Tente novamente; sua pontuação está preservada.');
+      if (!replacement) return false;
       await tx.gameRound.update({ where: { id: current.id }, data: {
         releaseYear: replacement.originalYear ?? replacement.releaseDate?.getUTCFullYear() ?? null, songId: replacement.id, title: replacement.title, artistName: replacement.artist.name,
         audioUrl: replacement.previewUrl, coverUrl: replacement.coverUrl, appleMusicUrl: replacement.appleMusicUrl,
         difficultyWeight: replacement.difficultyWeight, duration: CLUES[0], clueIndex: 0, revision: { increment: 1 }, startedAt: null,
       } });
     });
+    if (available === false) throw new AppError(503, 'AUDIO_UNAVAILABLE', 'Nenhum trecho alternativo disponível agora. Tente novamente; sua pontuação está preservada.');
   }
   async round(gameId: string, userId: string): Promise<RoundResponse> {
     for (let tries = 0; tries < 4; tries++) {

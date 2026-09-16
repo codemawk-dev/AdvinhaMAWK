@@ -1,4 +1,4 @@
-import { filterSongs, preferencesSchema } from './games/preferences.js';
+import { preferencesSchema } from './games/preferences.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import jwt from '@fastify/jwt';
@@ -60,8 +60,17 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   });
   app.post('/catalog/matching', async request => {
     const preferences = preferencesSchema.parse(request.body);
-    const matches = filterSongs(await songs.playable(), preferences);
-    return { songs: matches.length, titles: new Set(matches.map(song => song.normalizedTitle)).size, artists: new Set(matches.map(song => song.artistId)).size };
+    const year = Prisma.sql`COALESCE(s."originalYear", EXTRACT(YEAR FROM s."releaseDate"))`;
+    const [counts] = await db.$queryRaw<{ songs: number; titles: number; artists: number }[]>(Prisma.sql`
+      SELECT COUNT(*)::int AS songs, COUNT(DISTINCT s."normalizedTitle")::int AS titles,
+        COUNT(DISTINCT s."artistId")::int AS artists
+      FROM "Song" s JOIN "Artist" a ON a.id = s."artistId"
+      WHERE s.active AND a.active AND (s."audioUnavailableUntil" IS NULL OR s."audioUnavailableUntil" <= NOW())
+        ${preferences.genres.length ? Prisma.sql`AND a."categoryId" IN (${Prisma.join(preferences.genres)})` : Prisma.empty}
+        ${preferences.yearFrom !== null ? Prisma.sql`AND ${year} >= ${preferences.yearFrom}` : Prisma.empty}
+        ${preferences.yearTo !== null ? Prisma.sql`AND ${year} <= ${preferences.yearTo}` : Prisma.empty}
+    `);
+    return counts;
   });
   app.get('/catalog/summary', async () => {
     const [songs, artists, groups] = await Promise.all([

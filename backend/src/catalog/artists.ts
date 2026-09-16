@@ -21,7 +21,12 @@ artistGroups.sertanejo!.artists.push('Yasmin Santos', 'Léo & Raphael', 'Diego &
 artistGroups.forro!.artists.push('Iguinho e Lulinha', 'Vitor Fernandes', 'Eric Land', 'Raí Saia Rodada');
 artistGroups.funk!.artists.push('MC Davi', 'MC Menor JP', 'MC Tuto', 'MC Paiva', 'MC Pipokinha', 'MC Dricka', 'MC Zaac', 'MC Fioti', 'MC WM', 'MC Kekel');
 artistGroups.pagode_samba!.artists.push('Grupo Vou pro Sereno', 'Grupo Clareou', 'Grupo Kamisa 10', 'Di Propósito', 'Vitinho', 'Suél', 'Tiee', 'Chininha', 'Grupo Bom Gosto');
+// Curated pagodão / paredão category; existing axé artists keep their primary group.
+artistGroups.paredao_baiano = { name: 'Paredão baiano', artists: ['Oh Polêmico', 'O Kannalha', 'La Fúria', 'Escandurras', 'Robyssão', 'Igor Kannário', 'A Dama', 'O Poeta', 'Oh Maestro', 'Os Africanos'] };
 export const artistAliases: Record<string, string[]> = {
+  'O Kannalha': ['O Kanalha'],
+  'La Fúria': ['Lá Fúria'],
+  'Escandurras': ['Filipe Escandurras'],
   'Tom Jobim': ['Antônio Carlos Jobim', 'Antonio Carlos Jobim'],
   'Rio Negro & Solimões': ['Rionegro & Solimões'],
   'Biquini Cavadão': ['Biquini'],
