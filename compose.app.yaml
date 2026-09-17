@@ -1,0 +1,15 @@
+# Use with an existing PostgreSQL/Supabase database configured in backend/.env.
+services:
+  backend:
+    build: ./backend
+    env_file: backend/.env
+    environment:
+      HOST: 0.0.0.0
+    restart: unless-stopped
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

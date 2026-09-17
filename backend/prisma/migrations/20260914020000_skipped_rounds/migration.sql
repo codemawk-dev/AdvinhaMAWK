@@ -1,0 +1,1 @@
+ALTER TABLE "PlayerAnswer" ALTER COLUMN "optionId" DROP NOT NULL;

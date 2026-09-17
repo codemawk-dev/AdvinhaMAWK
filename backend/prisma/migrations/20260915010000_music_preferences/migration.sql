@@ -1,0 +1,2 @@
+ALTER TABLE "Game" ADD COLUMN "preferences" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "GameRound" ADD COLUMN "releaseYear" INTEGER;
