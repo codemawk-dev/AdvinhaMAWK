@@ -42,3 +42,5 @@ npm run catalog:sync -- --expand --after-artist UUID_ANTERIOR --until-artist UUI
 ```
 
 Omitir after-artist inclui o primeiro grupo. Consultas parciais e falhas de rede não removem músicas; a repetição usa os mesmos IDs e regras de deduplicação.
+
+A transferência REST consulta os IDs remotos por páginas e envia apenas registros ainda ausentes. IDs já existentes continuam preservados; isso não atualiza metadados anteriores no destino. As consultas grandes de discografia têm até 60 segundos para receber a resposta; buscas menores mantêm 15 segundos, além das retentativas limitadas.

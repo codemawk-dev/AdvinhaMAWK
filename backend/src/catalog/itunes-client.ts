@@ -58,7 +58,7 @@ export class ITunesClient implements MusicSearchClient {
     for (let attempt = 0; attempt < 3; attempt++) {
       await this.slot();
       try {
-        const response = await this.fetcher(url, { signal: AbortSignal.timeout(15000), redirect: 'error' });
+        const response = await this.fetcher(url, { signal: AbortSignal.timeout(path === '/lookup' && params.limit === '200' ? 60000 : 15000), redirect: 'error' });
         if (response.status === 429 || response.status >= 500) {
           const retry = response.headers.get('retry-after');
           const retryMs = retry ? (/^\d+$/.test(retry) ? Number(retry) * 1000 : Date.parse(retry) - Date.now()) : 0;
