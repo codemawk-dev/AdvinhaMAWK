@@ -70,7 +70,7 @@ export class CatalogService {
       finally { this.running = false; }
     }
   }
-  async expandKnownArtists(afterArtistId?: string) {
+  async expandKnownArtists(afterArtistId?: string, untilArtistId?: string) {
     if (this.running || !this.apple.lookupArtistSongs) throw new AppError(409, 'SYNC_UNAVAILABLE', 'Expansão indisponível agora.');
     this.running = true;
     let locked = false;
@@ -78,7 +78,7 @@ export class CatalogService {
     try {
       locked = await this.acquire();
       if (!locked) throw new AppError(409, 'SYNC_BUSY', 'Outra importação está em andamento.');
-      const artists = await this.db.artist.findMany({ where: { active: true, appleArtistId: { not: null }, ...(afterArtistId ? { id: { gt: afterArtistId } } : {}) }, orderBy: { id: 'asc' } });
+      const artists = await this.db.artist.findMany({ where: { active: true, appleArtistId: { not: null }, ...(afterArtistId || untilArtistId ? { id: { ...(afterArtistId ? { gt: afterArtistId } : {}), ...(untilArtistId ? { lte: untilArtistId } : {}) } } : {}) }, orderBy: { id: 'asc' } });
       for (let offset = 0; offset < artists.length; offset += 40) {
         const batch = artists.slice(offset, offset + 40);
         const byIdentity = new Map(batch.map(artist => [artist.appleArtistId!, artist]));
@@ -108,7 +108,7 @@ export class CatalogService {
             }
           } catch (error) {
             failed++;
-            this.logger.error({ err: error, offset }, 'catalog.expansion.failed');
+            this.logger.error({ err: error, offset, afterArtistId: offset ? artists[offset - 1]!.id : afterArtistId, untilArtistId: batch.at(-1)!.id }, 'catalog.expansion.failed');
           }
         }
         this.logger.info({ checked: Math.min(offset + 40, artists.length), total: artists.length, imported, failed, lastArtistId: batch.at(-1)!.id }, 'catalog.expansion.progress');

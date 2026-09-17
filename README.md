@@ -2,7 +2,7 @@
 
 Jogo brasileiro de adivinhar músicas, com frontend React 19 e backend Fastify, Prisma e PostgreSQL. O jogador digita o título ou artista, seleciona uma sugestão do catálogo e envia seu palpite. Cada uma das 10 músicas oferece cinco pistas de áudio: **0,1 → 0,5 → 2 → 8 → 15 segundos**.
 
-Antes da partida, selecione estilos musicais e intervalo de anos. O padrão da interface é de 2015 até o ano atual. O sorteio respeita esses filtros e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém 304 artistas configurados e a importação busca atingir pelo menos 20.000 músicas ativas com preview.
+Antes da partida, selecione estilos musicais e intervalo de anos. O padrão da interface é de 2015 até o ano atual. O sorteio respeita esses filtros e evita repetições recentes. Errar ou pedir mais áudio libera a próxima pista; acertar mais cedo vale mais pontos. Não há cronômetro por rodada. O catálogo contém mais de 800 artistas configurados em dez categorias e a importação busca atingir pelo menos 20.000 músicas ativas com preview.
 
 ## Desenvolvimento
 
@@ -14,7 +14,8 @@ cp backend/.env.example backend/.env
 docker compose up -d
 npm run db:migrate
 npm --prefix backend run db:seed
-npm run catalog:sync
+npm run catalog:sync -- --all
+npm run catalog:sync -- --expand
 npm run dev
 ```
 
@@ -67,3 +68,5 @@ Abra http://127.0.0.1:8080. Configure previamente um PostgreSQL acessível pelo 
 - `backend/README.md`: detalhes da API, critérios de seleção e operação do catálogo.
 
 A sessão é de visitante, vinculada ao navegador por cookie de 30 dias. Retomar uma partida usa apenas seu ID no armazenamento local; partidas expiram após 24 horas. Não há recuperação da conta em outro dispositivo. O modo duelo dos antigos protótipos ainda não possui suporte multiplayer e não aparece no fluxo integrado. O servidor prepara o áudio antes de abrir a rodada, substitui fontes indisponíveis e permite tentar novamente em falhas temporárias sem consumir palpites. A disponibilidade externa ainda depende da Apple. Partidas das regras antigas permanecem no histórico, mas não podem ser retomadas nem disputar o ranking das regras novas.
+
+A expansão por discografias, limites da fonte e retomada estão documentados em [docs/expansao-catalogo.md](docs/expansao-catalogo.md). Artistas sem identidade confirmada ficam pendentes.

@@ -255,6 +255,7 @@ describe('API progressiva + migrations + PostgreSQL real', () => {
     expect(await database.db.song.count({ where: { artistId: artist.id } })).toBe(1);
     expect(await database.db.song.findUnique({ where: { appleTrackId: '987654398' } })).toBeNull();
     expect(lookupArtistSongs).toHaveBeenCalled();
+    expect(await service.expandKnownArtists(artist.id, artist.id)).toMatchObject({ artists: 0, imported: 0, failed: 0 });
     expect(await database.db.catalogLease.count()).toBe(0);
   });
   it('não altera disponibilidade, prioridade ou aliases em PATCH parcial', async () => {

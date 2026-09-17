@@ -34,3 +34,11 @@ Use o cursor apenas se os lotes anteriores não tiveram falhas; caso contrário,
 O sorteio também aplica gêneros e anos na consulta ao banco antes de carregar candidatos, mantendo a mesma regra de ano original/edição usada na contagem e na seleção do jogo.
 
 As consultas de discografia usam até quatro conexões em andamento, mas o início de cada requisição continua espaçado pelo intervalo configurado (quatro segundos por padrão). Retentativas e Retry-After adiam também as próximas consultas da fila. A expansão processa grupos de 40 artistas em subconsultas de até dez IDs, com ponto de retomada apenas depois de concluir o grupo.
+
+Para repetir apenas um grupo que falhou, use os limites afterArtistId (exclusivo) e untilArtistId (inclusivo) informados pelo erro:
+
+```sh
+npm run catalog:sync -- --expand --after-artist UUID_ANTERIOR --until-artist UUID_FINAL
+```
+
+Omitir after-artist inclui o primeiro grupo. Consultas parciais e falhas de rede não removem músicas; a repetição usa os mesmos IDs e regras de deduplicação.

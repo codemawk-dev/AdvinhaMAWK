@@ -61,7 +61,7 @@ Falhas permanentes colocam a música em quarentena por 24 horas e provocam subst
 
 ## Catálogo e administração
 
-O seed cadastra 304 artistas em nove grupos editoriais. `npm run catalog:sync` importa até atingir 20.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--batch` limita a um lote; `--min-songs 20000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
+O seed cadastra mais de 800 artistas em dez grupos editoriais. `npm run catalog:sync` importa até atingir 20.000 músicas ativas, deduplicando títulos e preservando ajustes editoriais. `--all` processa todos os artistas elegíveis; `--expand` amplia as discografias por IDs confirmados, incluindo lançamentos recentes; `--batch` limita a um lote; `--min-songs 20000` define a meta. A importação é retomável. Artistas cadastrados não significam artistas já importados.
 
 O scheduler usa lease no banco para evitar importações concorrentes. `SCHEDULER_ENABLED=false` desativa a execução automática. Pesquisas de palpites usam o PostgreSQL; não fazem pesquisa externa durante a partida.
 
@@ -88,7 +88,7 @@ RLS e revogação de acesso a `anon` e `authenticated` protegem todas as tabelas
 
 `npm run test:stack` valida uma partida completa pelo proxy local em 127.0.0.1:5173, busca no catálogo e as cinco durações de áudio. `npm run test:live` importa dados externos em banco temporário. Ambos dependem da disponibilidade externa.
 
-Verificação de 16/09/2026: 65 testes automatizados aprovados; partida real com preferências concluída na validação; 225 fontes de áudio verificadas com sucesso usando a seleção de passagem audível. Catálogo local: 24.649 músicas, 260 artistas com músicas importadas, 304 artistas cadastrados e nove grupos. Essa amostra não representa auditoria individual das 24.649 fontes. Containers ainda precisam de validação em ambiente com Docker.
+Verificação da ampliação: 73 testes automatizados aprovados; lint, tipagem e build passaram. Partida real com preferências e avanço manual validada; dez prévias recentes (uma por categoria) passaram pelo processamento de áudio. Essas amostras não equivalem à auditoria de todo o catálogo. O resultado da carga está em [expansao-catalogo.md](../docs/expansao-catalogo.md). Containers ainda precisam de validação em ambiente com Docker.
 
 Os previews são fornecidos por terceiros. A implementação técnica não concede direitos de uso ou licença de distribuição; mantenha a avaliação de licenciamento do provedor antes da publicação comercial.
 
