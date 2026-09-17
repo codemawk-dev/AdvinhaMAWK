@@ -5,14 +5,16 @@ import { readConfig } from '../core/config.js';
 import { seedArtists } from './seed.js';
 import { syncToMinimum } from './import.js';
 const config = readConfig();
-const { values } = parseArgs({ options: { expand: { type: 'boolean' }, all: { type: 'boolean' }, batch: { type: 'boolean' }, 'min-songs': { type: 'string' } }, strict: true });
+const { values } = parseArgs({ options: { 'after-artist': { type: 'string' }, expand: { type: 'boolean' }, all: { type: 'boolean' }, batch: { type: 'boolean' }, 'min-songs': { type: 'string' } }, strict: true });
 if ([values.expand, values.all, values.batch, values['min-songs'] !== undefined].filter(Boolean).length > 1) throw new Error('Use apenas --expand, --all, --batch ou --min-songs N.');
+if (values['after-artist'] && !values.expand) throw new Error('--after-artist exige --expand.');
+const afterArtist = values['after-artist'] ? z.uuid().parse(values['after-artist']) : undefined;
 const minimum = z.coerce.number().int().min(1).max(100000).parse(values['min-songs'] ?? config.CATALOG_MIN_SONGS);
 const { app, db, catalog } = await buildApp(config);
 try {
   await seedArtists(db);
   if (values.expand) {
-    console.log(JSON.stringify(await catalog.expandKnownArtists()));
+    console.log(JSON.stringify(await catalog.expandKnownArtists(afterArtist)));
   } else if (values.all || values.batch) {
     do {
       const result = await catalog.syncBatch();

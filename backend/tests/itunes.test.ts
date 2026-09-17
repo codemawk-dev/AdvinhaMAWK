@@ -30,7 +30,7 @@ describe('ITunesClient', () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ resultCount: 1, results: [{ kind: 'song' }] })));
     await expect(new ITunesClient(0, fetcher).searchArtist('Artista')).rejects.toThrow();
   });
-  it('serializa requisições concorrentes e aplica intervalo', async () => {
+  it('espaça o início das requisições concorrentes', async () => {
     const timestamps: number[] = [];
     const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => {
       timestamps.push(Date.now()); return new Response(JSON.stringify({ resultCount: 1, results: [track] }));
@@ -38,6 +38,18 @@ describe('ITunesClient', () => {
     const client = new ITunesClient(40, fetcher);
     await Promise.all([client.searchArtist('A'), client.searchArtist('B'), client.searchArtist('C')]);
     expect(timestamps[2]! - timestamps[0]!).toBeGreaterThanOrEqual(70);
+  });
+  it('limita a quatro consultas em andamento mesmo com uma fila maior', async () => {
+    let active = 0; let peak = 0;
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async () => {
+      active++; peak = Math.max(peak, active);
+      await new Promise(resolve => setTimeout(resolve, 25));
+      active--;
+      return new Response(JSON.stringify({ resultCount: 1, results: [track] }));
+    });
+    const client = new ITunesClient(0, fetcher);
+    await Promise.all(Array.from({ length: 12 }, (_, index) => client.searchArtist(String(index))));
+    expect(peak).toBe(4); expect(fetcher).toHaveBeenCalledTimes(12);
   });
   it.each(['http://audio-ssl.itunes.apple.com/x', 'https://evil.test/x', 'https://a.mzstatic.com.evil.test/x', 'https://user:pass@a.mzstatic.com/x', 'https://a.mzstatic.com:444/x', 'http://127.0.0.1'])('rejeita origem não confiável %s', url => expect(isAppleAudioUrl(url)).toBe(false));
 });

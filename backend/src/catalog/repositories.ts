@@ -1,5 +1,5 @@
 import type { MusicPreferences } from '../games/preferences.js';
-import type { Artist, PrismaClient } from '@prisma/client';
+import type { Artist, Prisma, PrismaClient } from '@prisma/client';
 import { editorialWeights } from './curation.js';
 import { normalizeName, normalizeTitle, versionRank } from './normalization.js';
 import { isAppleAudioUrl, type AppleTrack } from './itunes-client.js';
@@ -49,18 +49,19 @@ export class SongRepository {
       AND: [...years, { OR: [{ audioUnavailableUntil: null }, { audioUnavailableUntil: { lte: new Date() } }] }],
     }, include: { artist: true } });
   }
-  async ingest(artist: Artist, track: AppleTrack): Promise<boolean> {
+  async ingest(artist: Artist, track: AppleTrack, transaction?: Prisma.TransactionClient): Promise<boolean> {
+    const writer = transaction ?? this.db;
     if (!track.previewUrl || !isAppleAudioUrl(track.previewUrl)) {
-      await this.db.song.updateMany({ where: { appleTrackId: String(track.trackId), artistId: artist.id }, data: { active: false, lastVerifiedAt: new Date() } });
+      await writer.song.updateMany({ where: { appleTrackId: String(track.trackId), artistId: artist.id }, data: { active: false, lastVerifiedAt: new Date() } });
       return false;
     }
     const rank = versionRank(track.trackName, track.collectionName);
     if (rank === 99) {
-      await this.db.song.updateMany({ where: { appleTrackId: String(track.trackId), artistId: artist.id }, data: { active: false, lastVerifiedAt: new Date() } });
+      await writer.song.updateMany({ where: { appleTrackId: String(track.trackId), artistId: artist.id }, data: { active: false, lastVerifiedAt: new Date() } });
       return false;
     }
     const normalizedTitle = normalizeTitle(track.trackName);
-    return this.db.$transaction(async tx => {
+    const write = async (tx: Prisma.TransactionClient) => {
       const byTrack = await tx.song.findUnique({ where: { appleTrackId: String(track.trackId) } });
       const canonical = await tx.song.findUnique({ where: { artistId_normalizedTitle: { artistId: artist.id, normalizedTitle } } });
       if (byTrack && byTrack.artistId !== artist.id) return false;
@@ -80,7 +81,16 @@ export class SongRepository {
       if (existing) await tx.song.update({ where: { id: existing.id }, data });
       else await tx.song.create({ data: { ...data, ...editorialWeights(artist.name, track.trackName) } });
       return true;
-    });
+    };
+    return transaction ? write(transaction) : this.db.$transaction(write);
+  }
+  async ingestBatch(entries: { artist: Artist; track: AppleTrack }[]): Promise<number> {
+    if (entries.length > 100) throw new Error('Ingestion batch too large');
+    return this.db.$transaction(async tx => {
+      let accepted = 0;
+      for (const { artist, track } of entries) if (await this.ingest(artist, track, tx)) accepted++;
+      return accepted;
+    }, { timeout: 60000 });
   }
   stale(limit = 50) {
     return this.db.song.findMany({ where: { lastVerifiedAt: { lt: new Date(Date.now() - 30 * 86400000) }, artist: { active: true } }, orderBy: { lastVerifiedAt: 'asc' }, take: limit, include: { artist: true } });

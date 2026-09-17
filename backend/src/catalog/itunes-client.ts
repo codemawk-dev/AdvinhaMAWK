@@ -23,7 +23,9 @@ export function isAppleAudioUrl(value: string): boolean {
 }
 export class ITunesClient implements MusicSearchClient {
   private nextRequestAt = 0;
-  private queue: Promise<unknown> = Promise.resolve();
+  private queue: Promise<void> = Promise.resolve();
+  private active = 0;
+  private waiting: (() => void)[] = [];
   constructor(private delayMs = 4000, private fetcher: typeof fetch = fetch) {}
   searchArtist(name: string): Promise<AppleTrack[]> {
     return this.request('/search', { term: name, attribute: 'artistTerm', limit: '200' });
@@ -36,8 +38,17 @@ export class ITunesClient implements MusicSearchClient {
     if (!ids.length || ids.length > 10 || ids.some(id => !/^\d+$/.test(id))) throw new Error('Invalid artist lookup batch');
     return this.request('/lookup', { id: ids.join(','), limit: '200', ...(recent ? { sort: 'recent' } : {}) });
   }
-  private request(path: string, params: Record<string, string>): Promise<AppleTrack[]> {
-    const result = this.queue.then(() => this.perform(path, params));
+  private async request(path: string, params: Record<string, string>): Promise<AppleTrack[]> {
+    if (this.active >= 4) await new Promise<void>(resolve => this.waiting.push(resolve));
+    else this.active++;
+    try { return await this.perform(path, params); }
+    finally { const next = this.waiting.shift(); if (next) next(); else this.active--; }
+  }
+  private slot(): Promise<void> {
+    const result = this.queue.then(async () => {
+      while (this.nextRequestAt > Date.now()) await sleep(this.nextRequestAt - Date.now());
+      this.nextRequestAt = Date.now() + this.delayMs;
+    });
     this.queue = result.catch(() => undefined);
     return result;
   }
@@ -45,14 +56,13 @@ export class ITunesClient implements MusicSearchClient {
     const url = new URL(path, 'https://itunes.apple.com');
     url.search = new URLSearchParams({ country: 'BR', media: 'music', entity: 'song', ...params }).toString();
     for (let attempt = 0; attempt < 3; attempt++) {
-      await sleep(Math.max(0, this.nextRequestAt - Date.now()));
-      this.nextRequestAt = Date.now() + this.delayMs;
+      await this.slot();
       try {
         const response = await this.fetcher(url, { signal: AbortSignal.timeout(15000), redirect: 'error' });
         if (response.status === 429 || response.status >= 500) {
           const retry = response.headers.get('retry-after');
           const retryMs = retry ? (/^\d+$/.test(retry) ? Number(retry) * 1000 : Date.parse(retry) - Date.now()) : 0;
-          this.nextRequestAt = Date.now() + Math.max(this.delayMs * 2 ** attempt, Math.min(60000, retryMs || 0));
+          this.nextRequestAt = Math.max(this.nextRequestAt, Date.now() + Math.max(this.delayMs * 2 ** attempt, Math.min(60000, retryMs || 0)));
           await response.body?.cancel();
           continue;
         }
@@ -64,7 +74,7 @@ export class ITunesClient implements MusicSearchClient {
           .map(item => trackSchema.parse(item));
       } catch (error) {
         if (error instanceof AppError || error instanceof z.ZodError || attempt === 2) throw error;
-        this.nextRequestAt = Date.now() + this.delayMs * 2 ** attempt;
+        this.nextRequestAt = Math.max(this.nextRequestAt, Date.now() + this.delayMs * 2 ** attempt);
       }
     }
     throw new AppError(502, 'APPLE_UNAVAILABLE', 'Apple temporariamente indisponível.');

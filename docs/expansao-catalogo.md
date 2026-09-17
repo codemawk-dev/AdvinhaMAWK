@@ -22,3 +22,15 @@ npm run supabase:transfer
 ```
 
 A transferência atual preserva IDs existentes e não substitui registros remotos anteriores. Nunca colocar credenciais em arquivos versionados. O aplicativo local só usa o banco apontado por DATABASE_URL.
+
+Para retomar uma expansão interrompida, o log de cada lote concluído informa lastArtistId:
+
+```sh
+npm run catalog:sync -- --expand --after-artist UUID_DO_ULTIMO_LOTE
+```
+
+Use o cursor apenas se os lotes anteriores não tiveram falhas; caso contrário, repetir sem cursor é seguro. Novos artistas inseridos com IDs anteriores ao cursor serão incluídos na próxima passagem completa. A gravação usa transações de até 100 faixas e elimina trackIds já processados entre as buscas padrão/recentes do mesmo lote. Isso mantém deduplicação e pesos editoriais sem executar um commit por faixa.
+
+O sorteio também aplica gêneros e anos na consulta ao banco antes de carregar candidatos, mantendo a mesma regra de ano original/edição usada na contagem e na seleção do jogo.
+
+As consultas de discografia usam até quatro conexões em andamento, mas o início de cada requisição continua espaçado pelo intervalo configurado (quatro segundos por padrão). Retentativas e Retry-After adiam também as próximas consultas da fila. A expansão processa grupos de 40 artistas em subconsultas de até dez IDs, com ponto de retomada apenas depois de concluir o grupo.

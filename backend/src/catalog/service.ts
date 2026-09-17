@@ -70,7 +70,7 @@ export class CatalogService {
       finally { this.running = false; }
     }
   }
-  async expandKnownArtists() {
+  async expandKnownArtists(afterArtistId?: string) {
     if (this.running || !this.apple.lookupArtistSongs) throw new AppError(409, 'SYNC_UNAVAILABLE', 'Expansão indisponível agora.');
     this.running = true;
     let locked = false;
@@ -78,25 +78,40 @@ export class CatalogService {
     try {
       locked = await this.acquire();
       if (!locked) throw new AppError(409, 'SYNC_BUSY', 'Outra importação está em andamento.');
-      const artists = await this.db.artist.findMany({ where: { active: true, appleArtistId: { not: null } }, orderBy: { id: 'asc' } });
-      for (let offset = 0; offset < artists.length; offset += 10) {
-        const batch = artists.slice(offset, offset + 10);
+      const artists = await this.db.artist.findMany({ where: { active: true, appleArtistId: { not: null }, ...(afterArtistId ? { id: { gt: afterArtistId } } : {}) }, orderBy: { id: 'asc' } });
+      for (let offset = 0; offset < artists.length; offset += 40) {
+        const batch = artists.slice(offset, offset + 40);
         const byIdentity = new Map(batch.map(artist => [artist.appleArtistId!, artist]));
-        for (const recent of [false, true]) {
-          await this.renew();
+        const seen = new Set<string>();
+        const ids = [...byIdentity.keys()];
+        const queries = [];
+        for (let index = 0; index < ids.length; index += 10) {
+          for (const recent of [false, true]) queries.push(this.apple.lookupArtistSongs(ids.slice(index, index + 10), recent));
+        }
+        await this.renew();
+        const results = await Promise.allSettled(queries);
+        for (const result of results) {
           try {
-            const tracks = await this.apple.lookupArtistSongs([...byIdentity.keys()], recent);
-            for (const track of tracks) {
+            if (result.status === 'rejected') throw result.reason;
+            const tracks = result.value;
+            const entries = tracks.flatMap(track => {
               const artist = byIdentity.get(String(track.artistId));
-              // Lookup may include collaborators and unrelated entries; only verified IDs belong here.
-              if (artist && await this.songs.ingest(artist, track)) imported++;
+              const key = String(track.trackId);
+              if (!artist || seen.has(key)) return [];
+              return [{ artist, track }];
+            });
+            for (let index = 0; index < entries.length; index += 100) {
+              await this.renew();
+              const chunk = entries.slice(index, index + 100);
+              imported += await this.songs.ingestBatch(chunk);
+              for (const entry of chunk) seen.add(String(entry.track.trackId));
             }
           } catch (error) {
             failed++;
-            this.logger.error({ err: error, offset, recent }, 'catalog.expansion.failed');
+            this.logger.error({ err: error, offset }, 'catalog.expansion.failed');
           }
         }
-        this.logger.info({ checked: Math.min(offset + 10, artists.length), total: artists.length, imported, failed }, 'catalog.expansion.progress');
+        this.logger.info({ checked: Math.min(offset + 40, artists.length), total: artists.length, imported, failed, lastArtistId: batch.at(-1)!.id }, 'catalog.expansion.progress');
       }
       return { artists: artists.length, imported, failed };
     } finally {
